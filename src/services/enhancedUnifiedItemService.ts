@@ -212,7 +212,7 @@ class EnhancedUnifiedItemService {
         supplier: supplier ? {
           id: supplier.id,
           name: supplier.company_name,
-          contact: supplier.contact_email,
+          contact: supplier.contact_info?.email,
           cnpj: supplier.cnpj
         } : undefined,
         maintenance: {
@@ -286,7 +286,7 @@ class EnhancedUnifiedItemService {
         supplier: supplier ? {
           id: supplier.id,
           name: supplier.company_name,
-          contact: supplier.contact_email,
+          contact: supplier.contact_info?.email,
           cnpj: supplier.cnpj
         } : undefined,
         qr_metadata: {
@@ -475,7 +475,7 @@ class EnhancedUnifiedItemService {
       checksum: this.generateChecksum(item.id + item.name),
       offline_specs: {
         weight: item.specifications.weight,
-        dimensions: item.specifications.dimensions,
+        dimensions: item.specifications.dimensions || undefined,
         category: item.category,
         supplier: item.supplier?.name,
         location: item.stock.location
