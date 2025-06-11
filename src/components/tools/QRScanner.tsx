@@ -2,9 +2,12 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { toolsApi } from '@/services/toolsApi';
+import { Tool } from '@/types/database';
 import { 
   QrCode, 
   Camera, 
@@ -13,30 +16,32 @@ import {
   User, 
   AlertTriangle,
   CheckCircle,
-  Clock
+  Loader2
 } from 'lucide-react';
 
 export const QRScanner = () => {
   const [scanMode, setScanMode] = useState<'checkout' | 'checkin' | null>(null);
-  const [scannedTool, setScannedTool] = useState<any>(null);
-  const [userId, setUserId] = useState('');
+  const [scannedTool, setScannedTool] = useState<Tool | null>(null);
   const [conditionNote, setConditionNote] = useState('');
   const [showConditionForm, setShowConditionForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  const { toast } = useToast();
+  const { user } = useAuth();
 
-  // Mock data para demonstração
-  const mockTool = {
+  // Mock data para demonstração - será substituído por QR real
+  const mockTool: Tool = {
     id: 'FER-08172',
     name: 'Furadeira de Impacto Makita',
     category: 'Elétrica',
     status: 'available',
     location: 'A-01-05',
-    currentUser: null
-  };
-
-  const mockUser = {
-    id: '11235',
-    name: 'João Silva',
-    department: 'Manutenção'
+    current_user_id: null,
+    qr_code: 'FER-08172-QR',
+    registration_date: '2024-01-15',
+    last_maintenance: '2024-05-10',
+    created_at: '2024-01-15T00:00:00Z',
+    updated_at: '2024-01-15T00:00:00Z'
   };
 
   const handleScanSimulation = () => {
@@ -44,11 +49,40 @@ export const QRScanner = () => {
     setScannedTool(mockTool);
   };
 
-  const handleCheckout = () => {
-    console.log('Realizando checkout:', { tool: scannedTool, user: mockUser });
-    // Aqui seria feita a API call para registrar a retirada
-    alert(`✅ Retirada confirmada: ${scannedTool.name} por ${mockUser.name}`);
-    resetForm();
+  const handleCheckout = async () => {
+    if (!user || !scannedTool) return;
+
+    setLoading(true);
+    
+    try {
+      const result = await toolsApi.checkoutTool({
+        toolId: scannedTool.id,
+        userId: user.id
+      });
+
+      if (result.success) {
+        toast({
+          title: "Sucesso",
+          description: `✅ Retirada confirmada: ${scannedTool.name}`,
+        });
+        resetForm();
+      } else {
+        toast({
+          title: "Erro",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Erro no checkout:', error);
+      toast({
+        title: "Erro",
+        description: "Erro interno do servidor",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCheckin = (condition: 'perfect' | 'damaged') => {
@@ -57,24 +91,58 @@ export const QRScanner = () => {
       return;
     }
 
-    console.log('Realizando checkin:', { 
-      tool: scannedTool, 
-      user: mockUser, 
-      condition: 'perfect' 
-    });
-    alert(`✅ Devolução registrada: ${scannedTool.name}. Obrigado!`);
-    resetForm();
+    performCheckin(false);
   };
 
   const handleDamagedCheckin = () => {
-    console.log('Realizando checkin com avaria:', { 
-      tool: scannedTool, 
-      user: mockUser, 
-      condition: 'damaged',
-      note: conditionNote 
-    });
-    alert(`✅ Devolução registrada com avaria: ${scannedTool.name}. Ferramenta enviada para manutenção.`);
-    resetForm();
+    if (!conditionNote.trim()) {
+      toast({
+        title: "Erro",
+        description: "Descreva o problema encontrado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    performCheckin(true, conditionNote);
+  };
+
+  const performCheckin = async (hasIssue: boolean, note?: string) => {
+    if (!user || !scannedTool) return;
+
+    setLoading(true);
+
+    try {
+      const result = await toolsApi.checkinTool({
+        toolId: scannedTool.id,
+        userId: user.id,
+        hasIssue,
+        conditionNote: note
+      });
+
+      if (result.success) {
+        toast({
+          title: "Sucesso",
+          description: result.message,
+        });
+        resetForm();
+      } else {
+        toast({
+          title: "Erro",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Erro no checkin:', error);
+      toast({
+        title: "Erro",
+        description: "Erro interno do servidor",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetForm = () => {
@@ -84,9 +152,22 @@ export const QRScanner = () => {
     setShowConditionForm(false);
   };
 
+  if (!user) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Acesso Negado</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Você precisa estar logado para usar o scanner.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Login do Usuário */}
+      {/* Usuário Logado */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
@@ -102,8 +183,8 @@ export const QRScanner = () => {
                   <User className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">{mockUser.name}</h3>
-                  <p className="text-sm text-gray-600">ID: {mockUser.id} • {mockUser.department}</p>
+                  <h3 className="font-semibold">{user.name}</h3>
+                  <p className="text-sm text-gray-600">ID: {user.id} • {user.department}</p>
                 </div>
               </div>
             </div>
@@ -146,7 +227,6 @@ export const QRScanner = () => {
             <Camera className="h-24 w-24 text-gray-400 mx-auto mb-6" />
             <p className="text-gray-600 mb-6">Aponte a câmera para o QR Code da ferramenta</p>
             
-            {/* Simulação do scanner */}
             <div className="space-y-4">
               <Button onClick={handleScanSimulation} className="bg-blue-600 hover:bg-blue-700">
                 <QrCode className="h-4 w-4 mr-2" />
@@ -181,16 +261,24 @@ export const QRScanner = () => {
 
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium mb-2">Usuário:</h4>
-                <p>{mockUser.name} (ID: {mockUser.id})</p>
-                <p className="text-sm text-gray-600">{mockUser.department}</p>
+                <p>{user.name} (ID: {user.id})</p>
+                <p className="text-sm text-gray-600">{user.department}</p>
               </div>
 
               <div className="flex space-x-2">
-                <Button onClick={handleCheckout} className="bg-blue-600 hover:bg-blue-700 flex-1">
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                <Button 
+                  onClick={handleCheckout} 
+                  className="bg-blue-600 hover:bg-blue-700 flex-1"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                  )}
                   Confirmar Retirada
                 </Button>
-                <Button variant="outline" onClick={resetForm}>
+                <Button variant="outline" onClick={resetForm} disabled={loading}>
                   Cancelar
                 </Button>
               </div>
@@ -226,6 +314,7 @@ export const QRScanner = () => {
                     onClick={() => handleCheckin('perfect')} 
                     variant="outline"
                     className="border-green-300 text-green-700 hover:bg-green-50"
+                    disabled={loading}
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
                     ✔️ Em perfeitas condições
@@ -235,6 +324,7 @@ export const QRScanner = () => {
                     onClick={() => handleCheckin('damaged')} 
                     variant="outline"
                     className="border-red-300 text-red-700 hover:bg-red-50"
+                    disabled={loading}
                   >
                     <AlertTriangle className="h-4 w-4 mr-2" />
                     ⚠️ Informar avaria/problema
@@ -242,7 +332,7 @@ export const QRScanner = () => {
                 </div>
               </div>
 
-              <Button variant="outline" onClick={resetForm} className="w-full">
+              <Button variant="outline" onClick={resetForm} className="w-full" disabled={loading}>
                 Cancelar
               </Button>
             </div>
@@ -262,8 +352,8 @@ export const QRScanner = () => {
           <CardContent>
             <div className="space-y-4">
               <div className="bg-red-50 p-4 rounded-lg">
-                <h3 className="font-semibold">{scannedTool.name}</h3>
-                <p className="text-gray-600">ID: {scannedTool.id}</p>
+                <h3 className="font-semibold">{scannedTool?.name}</h3>
+                <p className="text-gray-600">ID: {scannedTool?.id}</p>
               </div>
 
               <div>
@@ -282,12 +372,20 @@ export const QRScanner = () => {
                 <Button 
                   onClick={handleDamagedCheckin} 
                   className="bg-red-600 hover:bg-red-700 flex-1"
-                  disabled={!conditionNote.trim()}
+                  disabled={!conditionNote.trim() || loading}
                 >
-                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                  )}
                   Confirmar Devolução com Avaria
                 </Button>
-                <Button variant="outline" onClick={() => setShowConditionForm(false)}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowConditionForm(false)}
+                  disabled={loading}
+                >
                   Voltar
                 </Button>
               </div>
