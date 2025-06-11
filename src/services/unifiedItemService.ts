@@ -354,5 +354,3 @@ class UnifiedItemService {
 }
 
 export const unifiedItemService = new UnifiedItemService();
-
-}
