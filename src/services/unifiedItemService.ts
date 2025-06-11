@@ -1,3 +1,4 @@
+
 import { toolsApi } from './toolsApi';
 import { masterDataApi } from './masterDataApi';
 import { Tool } from '@/types/database';
@@ -113,6 +114,18 @@ class UnifiedItemService {
       
       if (!tool) return null;
 
+      // Map Tool status to UnifiedItem status
+      const mapToolStatus = (toolStatus: string): 'available' | 'in-use' | 'maintenance' | 'inactive' => {
+        switch (toolStatus) {
+          case 'available': return 'available';
+          case 'in-use': return 'in-use';
+          case 'maintenance': return 'maintenance';
+          case 'inactive': return 'inactive';
+          case 'reserved': return 'available'; // Reserved tools are still considered available in the unified view
+          default: return 'available';
+        }
+      };
+
       return {
         id: tool.id,
         type: 'TOOL',
@@ -126,7 +139,7 @@ class UnifiedItemService {
         stock: {
           current: 1,
           location: tool.location,
-          status: tool.status // Tool status already matches UnifiedItem status
+          status: mapToolStatus(tool.status)
         },
         maintenance: {
           last_maintenance: tool.last_maintenance,
