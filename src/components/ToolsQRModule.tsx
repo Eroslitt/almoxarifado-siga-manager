@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToolsHeader } from '@/components/tools/ToolsHeader';
@@ -13,6 +12,8 @@ import { LabelPrinter } from '@/components/tools/LabelPrinter';
 import { AlertsManagement } from '@/components/tools/AlertsManagement';
 import { ReservationsManagement } from '@/components/tools/ReservationsManagement';
 import { MaintenanceManagement } from '@/components/tools/MaintenanceManagement';
+import { WorkTemplateManager } from '@/components/kitting/WorkTemplateManager';
+import { KittingCheckout } from '@/components/kitting/KittingCheckout';
 
 export const ToolsQRModule = () => {
   // Mock data para demonstração
@@ -100,16 +101,17 @@ export const ToolsQRModule = () => {
       <ToolsStats stats={toolsStats} />
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-10">
+        <TabsList className="grid w-full grid-cols-11">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="management">Gestão</TabsTrigger>
           <TabsTrigger value="scanner">QR Scanner</TabsTrigger>
+          <TabsTrigger value="kitting">Kitting Dinâmico</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="qr-generator">Gerar QR</TabsTrigger>
           <TabsTrigger value="labels">Etiquetas</TabsTrigger>
           <TabsTrigger value="alerts">Alertas</TabsTrigger>
           <TabsTrigger value="reservations">Reservas</TabsTrigger>
           <TabsTrigger value="maintenance">Manutenção</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
         </TabsList>
 
@@ -123,6 +125,14 @@ export const ToolsQRModule = () => {
 
         <TabsContent value="scanner" className="space-y-4">
           <QRScanner />
+        </TabsContent>
+
+        <TabsContent value="kitting" className="space-y-4">
+          <KittingCheckout />
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-4">
+          <WorkTemplateManager />
         </TabsContent>
 
         <TabsContent value="qr-generator" className="space-y-4">
@@ -146,10 +156,6 @@ export const ToolsQRModule = () => {
 
         <TabsContent value="maintenance" className="space-y-4">
           <MaintenanceManagement />
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-4">
-          <ToolsReports />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-4">
