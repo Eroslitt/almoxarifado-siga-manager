@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -146,13 +145,16 @@ export const MasterDataModule = () => {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="skus">SKUs</TabsTrigger>
           <TabsTrigger value="suppliers">Fornecedores</TabsTrigger>
           <TabsTrigger value="locations">Endereços</TabsTrigger>
           <TabsTrigger value="categories">Categorias</TabsTrigger>
+          <TabsTrigger value="import-export">Import/Export</TabsTrigger>
+          <TabsTrigger value="quality">Qualidade</TabsTrigger>
+          <TabsTrigger value="audit">Auditoria</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -398,6 +400,18 @@ export const MasterDataModule = () => {
 
         <TabsContent value="categories">
           <CategoryManager />
+        </TabsContent>
+
+        <TabsContent value="import-export">
+          <DataImportExport />
+        </TabsContent>
+
+        <TabsContent value="quality">
+          <DataQualityDashboard />
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <AuditTrail />
         </TabsContent>
       </Tabs>
     </div>
