@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToolsHeader } from '@/components/tools/ToolsHeader';
@@ -17,6 +16,8 @@ import { ReservationsManagement } from '@/components/tools/ReservationsManagemen
 import { MaintenanceManagement } from '@/components/tools/MaintenanceManagement';
 import { WorkTemplateManager } from '@/components/kitting/WorkTemplateManager';
 import { KittingCheckout } from '@/components/kitting/KittingCheckout';
+import { SmartQRScanner } from '@/components/tools/SmartQRScanner';
+import { RealTimeMovementsDashboard } from '@/components/tools/RealTimeMovementsDashboard';
 
 export const ToolsQRModule = () => {
   // Mock data para demonstração
@@ -108,7 +109,8 @@ export const ToolsQRModule = () => {
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="management">Gestão</TabsTrigger>
           <TabsTrigger value="scanner">QR Scanner</TabsTrigger>
-          <TabsTrigger value="enhanced-scanner">Scanner Inteligente</TabsTrigger>
+          <TabsTrigger value="smart-scanner">Smart Scanner</TabsTrigger>
+          <TabsTrigger value="dashboard">Dashboard Tempo Real</TabsTrigger>
           <TabsTrigger value="kitting">Kitting</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="qr-generator">Gerar QR</TabsTrigger>
@@ -132,6 +134,14 @@ export const ToolsQRModule = () => {
 
         <TabsContent value="scanner" className="space-y-4">
           <QRScanner />
+        </TabsContent>
+
+        <TabsContent value="smart-scanner" className="space-y-4">
+          <SmartQRScanner />
+        </TabsContent>
+
+        <TabsContent value="dashboard" className="space-y-4">
+          <RealTimeMovementsDashboard />
         </TabsContent>
 
         <TabsContent value="enhanced-scanner" className="space-y-4">
