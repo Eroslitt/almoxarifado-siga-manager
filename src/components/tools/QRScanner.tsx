@@ -16,7 +16,9 @@ import {
   User, 
   AlertTriangle,
   CheckCircle,
-  Loader2
+  Loader2,
+  Shield,
+  ShieldX
 } from 'lucide-react';
 
 export const QRScanner = () => {
@@ -26,6 +28,8 @@ export const QRScanner = () => {
   const [showConditionForm, setShowConditionForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [safetyDenied, setSafetyDenied] = useState(false);
+  const [denialMessage, setDenialMessage] = useState('');
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -45,6 +49,25 @@ export const QRScanner = () => {
     usage_hours: 150,
     maintenance_interval_hours: 200,
     purchase_price: 450.00,
+    created_at: '2024-01-15T00:00:00Z',
+    updated_at: '2024-01-15T00:00:00Z'
+  };
+
+  // Mock tool que requer certificação para demonstrar segurança
+  const mockHighRiskTool: Tool = {
+    id: 'FER-SERRA-001',
+    name: 'Serra Circular de Bancada',
+    category: 'Elétrica',
+    status: 'available',
+    location: 'A-02-10',
+    current_user_id: null,
+    qr_code: 'FER-SERRA-001-QR',
+    registration_date: '2024-01-15',
+    last_maintenance: '2024-05-10',
+    next_maintenance: '2024-11-10',
+    usage_hours: 75,
+    maintenance_interval_hours: 200,
+    purchase_price: 1200.00,
     created_at: '2024-01-15T00:00:00Z',
     updated_at: '2024-01-15T00:00:00Z'
   };
@@ -104,7 +127,6 @@ export const QRScanner = () => {
 
   const handleScanError = (errorMessage: string) => {
     console.warn('QR Scan error:', errorMessage);
-    // Não mostrar toast para erros comuns de scanning
     if (!errorMessage.includes('No QR code found')) {
       toast({
         title: "Erro no Scanner",
@@ -118,11 +140,14 @@ export const QRScanner = () => {
     setScanMode(mode);
     setShowScanner(true);
     setScannedTool(null);
+    setSafetyDenied(false);
+    setDenialMessage('');
   };
 
   const handleScanSimulation = () => {
-    // Simula a leitura de um QR Code
-    setScannedTool(mockTool);
+    // Alternar entre ferramenta normal e ferramenta que requer certificação
+    const isHighRisk = Math.random() > 0.5;
+    setScannedTool(isHighRisk ? mockHighRiskTool : mockTool);
   };
 
   const handleCheckout = async () => {
@@ -143,11 +168,17 @@ export const QRScanner = () => {
         });
         resetForm();
       } else {
-        toast({
-          title: "Erro",
-          description: result.message,
-          variant: "destructive",
-        });
+        if (result.safetyDenied) {
+          // Mostrar tela específica de negação de segurança
+          setSafetyDenied(true);
+          setDenialMessage(result.message);
+        } else {
+          toast({
+            title: "Erro",
+            description: result.message,
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error('Erro no checkout:', error);
@@ -227,6 +258,8 @@ export const QRScanner = () => {
     setConditionNote('');
     setShowConditionForm(false);
     setShowScanner(false);
+    setSafetyDenied(false);
+    setDenialMessage('');
   };
 
   if (!user) {
@@ -322,6 +355,64 @@ export const QRScanner = () => {
               <div>
                 <Button variant="outline" onClick={resetForm}>
                   Cancelar
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tela de Negação de Acesso por Segurança */}
+      {safetyDenied && scannedTool && (
+        <Card className="border-red-500 bg-red-50">
+          <CardHeader className="bg-red-100 border-b border-red-200">
+            <CardTitle className="flex items-center space-x-2 text-red-800">
+              <ShieldX className="h-6 w-6" />
+              <span>ACESSO NEGADO - QUESTÃO DE SEGURANÇA</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <div className="bg-white p-4 rounded-lg border border-red-200">
+                <h3 className="font-semibold text-lg text-gray-900">{scannedTool.name}</h3>
+                <p className="text-gray-600">ID: {scannedTool.id} • Categoria: {scannedTool.category}</p>
+                <Badge className="bg-red-100 text-red-800 mt-2">
+                  <Shield className="h-3 w-3 mr-1" />
+                  Equipamento de Alto Risco
+                </Badge>
+              </div>
+
+              <div className="bg-red-100 border-l-4 border-red-500 p-4 rounded">
+                <div className="whitespace-pre-line text-red-800 font-medium">
+                  {denialMessage}
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                <h4 className="font-medium text-yellow-800 mb-2">🔒 Protocolo de Segurança Ativo</h4>
+                <p className="text-yellow-700 text-sm">
+                  Este sistema de controle de acesso está em conformidade com as normas de segurança do trabalho. 
+                  O acesso foi negado para proteger você e a empresa.
+                </p>
+              </div>
+
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={resetForm} 
+                  className="bg-gray-600 hover:bg-gray-700 flex-1"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Entendi, Voltar
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                  onClick={() => toast({
+                    title: "Solicitação Registrada",
+                    description: "Seu supervisor será notificado sobre a necessidade de treinamento.",
+                  })}
+                >
+                  📋 Solicitar Treinamento
                 </Button>
               </div>
             </div>

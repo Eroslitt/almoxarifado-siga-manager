@@ -1,6 +1,6 @@
-
 import { supabase } from '@/lib/supabase';
 import { Tool, ToolMovement, User } from '@/types/database';
+import { safetyComplianceApi } from './safetyComplianceApi';
 
 export interface CheckoutRequest {
   toolId: string;
@@ -23,10 +23,21 @@ export interface ToolsFilters {
 }
 
 class ToolsApiService {
-  // Fazer checkout de uma ferramenta
-  async checkoutTool(request: CheckoutRequest): Promise<{ success: boolean; message: string }> {
+  // Fazer checkout de uma ferramenta com validação de segurança
+  async checkoutTool(request: CheckoutRequest): Promise<{ success: boolean; message: string; safetyDenied?: boolean }> {
     try {
       console.log('Fazendo checkout da ferramenta:', request);
+
+      // NOVA VALIDAÇÃO DE SEGURANÇA - Verificar certificações primeiro
+      const safetyValidation = await safetyComplianceApi.validateToolAccess(request.userId, request.toolId);
+      
+      if (!safetyValidation.allowed) {
+        return { 
+          success: false, 
+          message: safetyValidation.denialReason || 'Acesso negado por questões de segurança',
+          safetyDenied: true
+        };
+      }
 
       // Verificar se a ferramenta está disponível
       const { data: tool, error: toolError } = await supabase

@@ -1,4 +1,3 @@
-
 export interface Database {
   public: {
     Tables: {
@@ -120,6 +119,108 @@ export interface Database {
           notification_preferences?: any;
           created_at?: string;
           updated_at?: string;
+        };
+      };
+      user_certifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          certification_type: 'NR-10' | 'NR-35' | 'Operador-Empilhadeira' | 'Soldador' | 'Eletricista' | 'Trabalho-Altura' | 'Espaco-Confinado';
+          certification_number: string;
+          issued_date: string;
+          expiry_date: string;
+          issuing_authority: string;
+          status: 'active' | 'expired' | 'revoked' | 'pending';
+          document_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          certification_type: 'NR-10' | 'NR-35' | 'Operador-Empilhadeira' | 'Soldador' | 'Eletricista' | 'Trabalho-Altura' | 'Espaco-Confinado';
+          certification_number: string;
+          issued_date: string;
+          expiry_date: string;
+          issuing_authority: string;
+          status?: 'active' | 'expired' | 'revoked' | 'pending';
+          document_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          certification_type?: 'NR-10' | 'NR-35' | 'Operador-Empilhadeira' | 'Soldador' | 'Eletricista' | 'Trabalho-Altura' | 'Espaco-Confinado';
+          certification_number?: string;
+          issued_date?: string;
+          expiry_date?: string;
+          issuing_authority?: string;
+          status?: 'active' | 'expired' | 'revoked' | 'pending';
+          document_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      tool_safety_requirements: {
+        Row: {
+          id: string;
+          tool_id: string;
+          required_certification_type: 'NR-10' | 'NR-35' | 'Operador-Empilhadeira' | 'Soldador' | 'Eletricista' | 'Trabalho-Altura' | 'Espaco-Confinado';
+          risk_level: 'low' | 'medium' | 'high' | 'critical';
+          mandatory: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tool_id: string;
+          required_certification_type: 'NR-10' | 'NR-35' | 'Operador-Empilhadeira' | 'Soldador' | 'Eletricista' | 'Trabalho-Altura' | 'Espaco-Confinado';
+          risk_level?: 'low' | 'medium' | 'high' | 'critical';
+          mandatory?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tool_id?: string;
+          required_certification_type?: 'NR-10' | 'NR-35' | 'Operador-Empilhadeira' | 'Soldador' | 'Eletricista' | 'Trabalho-Altura' | 'Espaco-Confinado';
+          risk_level?: 'low' | 'medium' | 'high' | 'critical';
+          mandatory?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      security_access_logs: {
+        Row: {
+          id: string;
+          user_id: string;
+          tool_id: string;
+          access_attempt: 'granted' | 'denied';
+          denial_reason: string | null;
+          required_certifications: string | null;
+          timestamp: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          tool_id: string;
+          access_attempt: 'granted' | 'denied';
+          denial_reason?: string | null;
+          required_certifications?: string | null;
+          timestamp?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          tool_id?: string;
+          access_attempt?: 'granted' | 'denied';
+          denial_reason?: string | null;
+          required_certifications?: string | null;
+          timestamp?: string;
+          created_at?: string;
         };
       };
       tool_reservations: {
@@ -255,3 +356,6 @@ export type User = Database['public']['Tables']['users']['Row'];
 export type ToolReservation = Database['public']['Tables']['tool_reservations']['Row'];
 export type MaintenanceSchedule = Database['public']['Tables']['maintenance_schedules']['Row'];
 export type Alert = Database['public']['Tables']['alerts']['Row'];
+export type UserCertification = Database['public']['Tables']['user_certifications']['Row'];
+export type ToolSafetyRequirement = Database['public']['Tables']['tool_safety_requirements']['Row'];
+export type SecurityAccessLog = Database['public']['Tables']['security_access_logs']['Row'];
