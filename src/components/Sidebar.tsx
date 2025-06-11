@@ -27,6 +27,15 @@ export const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
     { id: 'reports', label: 'Relatórios', icon: BarChart3 },
   ];
 
+  const handleModuleClick = (moduleId: string) => {
+    console.log('Sidebar: Changing module to:', moduleId);
+    try {
+      onModuleChange(moduleId);
+    } catch (error) {
+      console.error('Error changing module:', error);
+    }
+  };
+
   return (
     <div className="w-64 bg-slate-900 text-white flex flex-col">
       <div className="p-6 border-b border-slate-700">
@@ -41,15 +50,16 @@ export const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
             return (
               <button
                 key={item.id}
-                onClick={() => onModuleChange(item.id)}
+                type="button"
+                onClick={() => handleModuleClick(item.id)}
                 className={cn(
-                  "w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors",
+                  "w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
                   activeModule === item.id
-                    ? "bg-blue-600 text-white"
+                    ? "bg-blue-600 text-white shadow-lg"
                     : "text-slate-300 hover:bg-slate-800 hover:text-white"
                 )}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-5 w-5 flex-shrink-0" />
                 <span className="text-sm font-medium">{item.label}</span>
               </button>
             );
@@ -58,7 +68,11 @@ export const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
       </nav>
       
       <div className="p-4 border-t border-slate-700">
-        <button className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+        <button 
+          type="button"
+          onClick={() => console.log('Settings clicked')}
+          className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
+        >
           <Settings className="h-5 w-5" />
           <span className="text-sm font-medium">Configurações</span>
         </button>

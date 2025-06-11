@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Truck, 
   CheckCircle, 
@@ -15,6 +16,7 @@ import {
 
 export const ReceivingModule = () => {
   const [activeTab, setActiveTab] = useState('scheduled');
+  const { toast } = useToast();
 
   const scheduledDeliveries = [
     {
@@ -82,6 +84,38 @@ export const ReceivingModule = () => {
     }
   };
 
+  const handleNewSchedule = () => {
+    console.log('Novo Agendamento clicked');
+    toast({
+      title: "Novo Agendamento",
+      description: "Modal para novo agendamento será aberto.",
+    });
+  };
+
+  const handleStartReceiving = (deliveryId: string) => {
+    console.log('Iniciar Recebimento clicked for:', deliveryId);
+    toast({
+      title: "Recebimento Iniciado",
+      description: `Iniciando recebimento para ${deliveryId}`,
+    });
+  };
+
+  const handleViewProgress = (itemId: string) => {
+    console.log('Ver Progresso clicked for:', itemId);
+    toast({
+      title: "Progresso",
+      description: `Visualizando progresso de ${itemId}`,
+    });
+  };
+
+  const handleStartItem = (itemId: string) => {
+    console.log('Iniciar clicked for:', itemId);
+    toast({
+      title: "Processo Iniciado",
+      description: `Iniciando processo para ${itemId}`,
+    });
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -89,7 +123,7 @@ export const ReceivingModule = () => {
           <h1 className="text-3xl font-bold text-gray-900">Recebimento</h1>
           <p className="text-gray-600 mt-1">Controle de entregas e conferência de materiais</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleNewSchedule}>
           <Plus className="h-4 w-4 mr-2" />
           Novo Agendamento
         </Button>
@@ -97,7 +131,7 @@ export const ReceivingModule = () => {
 
       {/* Métricas do Dia */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Truck className="h-8 w-8 text-blue-600" />
@@ -109,7 +143,7 @@ export const ReceivingModule = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-8 w-8 text-green-600" />
@@ -121,7 +155,7 @@ export const ReceivingModule = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Clock className="h-8 w-8 text-yellow-600" />
@@ -133,7 +167,7 @@ export const ReceivingModule = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <AlertTriangle className="h-8 w-8 text-red-600" />
@@ -149,8 +183,9 @@ export const ReceivingModule = () => {
       {/* Tabs */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
         <button
+          type="button"
           onClick={() => setActiveTab('scheduled')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
             activeTab === 'scheduled'
               ? 'bg-white text-gray-900 shadow-sm'
               : 'text-gray-600 hover:text-gray-900'
@@ -159,8 +194,9 @@ export const ReceivingModule = () => {
           Agendamentos
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('receiving')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
             activeTab === 'receiving'
               ? 'bg-white text-gray-900 shadow-sm'
               : 'text-gray-600 hover:text-gray-900'
@@ -208,7 +244,7 @@ export const ReceivingModule = () => {
                       </div>
                     </div>
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleStartReceiving(delivery.id)}>
                         <Scan className="h-4 w-4 mr-2" />
                         Iniciar Recebimento
                       </Button>
@@ -267,13 +303,13 @@ export const ReceivingModule = () => {
                     </div>
                     <div className="flex space-x-2">
                       {item.status === 'waiting' && (
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => handleStartItem(item.id)}>
                           <Package className="h-4 w-4 mr-2" />
                           Iniciar
                         </Button>
                       )}
                       {item.status === 'receiving' && (
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleViewProgress(item.id)}>
                           Ver Progresso
                         </Button>
                       )}

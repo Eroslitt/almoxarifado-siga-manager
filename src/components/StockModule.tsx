@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Search, 
   Filter, 
@@ -17,6 +18,7 @@ import {
 
 export const StockModule = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const { toast } = useToast();
 
   const stockItems = [
     {
@@ -70,6 +72,30 @@ export const StockModule = () => {
     item.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleNewItem = () => {
+    console.log('Novo Item clicked');
+    toast({
+      title: "Novo Item",
+      description: "Modal para adicionar novo item será aberto.",
+    });
+  };
+
+  const handleFilter = () => {
+    console.log('Filtros clicked');
+    toast({
+      title: "Filtros",
+      description: "Painel de filtros será aberto.",
+    });
+  };
+
+  const handleViewDetails = (itemId: string) => {
+    console.log('Ver Detalhes clicked for:', itemId);
+    toast({
+      title: "Detalhes do Item",
+      description: `Visualizando detalhes do item ${itemId}`,
+    });
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -77,7 +103,7 @@ export const StockModule = () => {
           <h1 className="text-3xl font-bold text-gray-900">Gestão de Estoque</h1>
           <p className="text-gray-600 mt-1">Controle total dos itens do almoxarifado</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleNewItem}>
           <Plus className="h-4 w-4 mr-2" />
           Novo Item
         </Button>
@@ -85,7 +111,7 @@ export const StockModule = () => {
 
       {/* Resumo Geral */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Package className="h-8 w-8 text-blue-600" />
@@ -97,7 +123,7 @@ export const StockModule = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <AlertTriangle className="h-8 w-8 text-red-600" />
@@ -109,7 +135,7 @@ export const StockModule = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <TrendingDown className="h-8 w-8 text-orange-600" />
@@ -121,7 +147,7 @@ export const StockModule = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <MapPin className="h-8 w-8 text-green-600" />
@@ -149,7 +175,7 @@ export const StockModule = () => {
                 />
               </div>
             </div>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleFilter}>
               <Filter className="h-4 w-4 mr-2" />
               Filtros
             </Button>
@@ -202,7 +228,7 @@ export const StockModule = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Badge variant="secondary">Curva {item.classification}</Badge>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleViewDetails(item.id)}>
                       Ver Detalhes
                     </Button>
                   </div>
