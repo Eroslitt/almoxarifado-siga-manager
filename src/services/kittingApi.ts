@@ -346,5 +346,3 @@ class KittingApiService {
 }
 
 export const kittingApi = new KittingApiService();
-
-}
