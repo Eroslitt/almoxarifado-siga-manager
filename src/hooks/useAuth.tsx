@@ -24,12 +24,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         if (isDemoMode) {
           // Demo mode - use mock user
-          const mockUser = {
+          const mockUser: User = {
             id: 'demo-user-123',
             email: 'demo@siga.com',
             name: 'Demo User',
             department: 'Almoxarifado',
-            role: 'admin' as const,
+            role: 'administrator',
+            active: true,
+            notification_preferences: { email: true, push: true },
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
@@ -41,6 +43,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               name: 'Demo User',
               department: 'Almoxarifado'
             },
+            app_metadata: {},
+            aud: 'authenticated',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           } as SupabaseUser;
@@ -92,12 +96,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       if (isDemoMode) {
         // Demo mode - return mock user
-        const mockUser = {
+        const mockUser: User = {
           id: userId,
           email: 'demo@siga.com',
           name: 'Demo User',
           department: 'Almoxarifado',
-          role: 'admin' as const,
+          role: 'administrator',
+          active: true,
+          notification_preferences: { email: true, push: true },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };

@@ -1,4 +1,3 @@
-
 interface NotificationConfig {
   title: string;
   body: string;
@@ -76,18 +75,24 @@ class NotificationService {
 
     try {
       if (this.registration) {
-        // Use service worker notification
-        await this.registration.showNotification(config.title, {
+        // Use service worker notification with correct options
+        const options: NotificationOptions = {
           body: config.body,
           icon: config.icon || '/favicon.ico',
           badge: config.badge || '/favicon.ico',
           tag: config.tag || `siga-${Date.now()}`,
           data: config.data,
-          actions: config.actions,
           requireInteraction: config.requireInteraction || false,
           silent: config.silent || false,
           vibrate: [200, 100, 200]
-        });
+        };
+
+        // Add actions only if supported by the service worker
+        if (config.actions && config.actions.length > 0) {
+          (options as any).actions = config.actions;
+        }
+
+        await this.registration.showNotification(config.title, options);
       } else {
         // Fallback to regular notification
         const notification = new Notification(config.title, {

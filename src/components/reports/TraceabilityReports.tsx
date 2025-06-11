@@ -357,8 +357,8 @@ export const TraceabilityReports = () => {
                                       <div key={key} className="flex justify-between">
                                         <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
                                         <span className="font-medium">
-                                          {typeof value === 'number' && key.includes('Price') || key.includes('cost') 
-                                            ? `R$ ${value.toFixed(2)}` 
+                                          {typeof value === 'number' && (key.includes('Price') || key.includes('cost'))
+                                            ? `R$ ${(value as number).toFixed(2)}` 
                                             : String(value)}
                                         </span>
                                       </div>
