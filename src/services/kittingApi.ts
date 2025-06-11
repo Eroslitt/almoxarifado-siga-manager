@@ -411,7 +411,7 @@ class KittingApiService {
         .from('tool_movements')
         .select(`
           tool_id,
-          tools(name, status, location)
+          tool:tools!inner(name, status, location)
         `)
         .eq('user_id', userId)
         .eq('action', 'checkout')
@@ -435,8 +435,8 @@ class KittingApiService {
       // Analyze patterns
       const toolFrequency: Record<string, number> = {};
       recentMovements.forEach(movement => {
-        if (movement.tools && movement.tools.name) {
-          const toolName = movement.tools.name;
+        if (movement.tool && movement.tool.name) {
+          const toolName = movement.tool.name;
           toolFrequency[toolName] = (toolFrequency[toolName] || 0) + 1;
         }
       });
@@ -447,16 +447,16 @@ class KittingApiService {
         .slice(0, 3);
 
       mostUsed.forEach(([toolName], index) => {
-        const movement = recentMovements.find(m => m.tools?.name === toolName);
-        if (movement && movement.tools) {
+        const movement = recentMovements.find(m => m.tool?.name === toolName);
+        if (movement && movement.tool) {
           suggestions.push({
             toolId: movement.tool_id,
-            toolName: movement.tools.name,
+            toolName: movement.tool.name,
             priority: index === 0 ? 'essential' : 'recommended',
             confidence: 0.9 - (index * 0.1),
             reason: 'Ferramenta frequentemente usada por você',
-            available: movement.tools.status === 'available',
-            location: movement.tools.location || 'N/A'
+            available: movement.tool.status === 'available',
+            location: movement.tool.location || 'N/A'
           });
         }
       });
@@ -489,10 +489,10 @@ class KittingApiService {
     const dailyUsage: Record<string, string[]> = {};
     
     movements.forEach(movement => {
-      if (movement.tools) {
+      if (movement.tool) {
         const date = new Date(movement.timestamp).toDateString();
         if (!dailyUsage[date]) dailyUsage[date] = [];
-        dailyUsage[date].push(movement.tools.name);
+        dailyUsage[date].push(movement.tool.name);
       }
     });
 
