@@ -1,4 +1,3 @@
-
 import { toolsApi } from './toolsApi';
 import { masterDataApi } from './masterDataApi';
 import { Tool } from '@/types/database';
@@ -127,7 +126,7 @@ class UnifiedItemService {
         stock: {
           current: 1,
           location: tool.location,
-          status: tool.status
+          status: tool.status // Tool status already matches UnifiedItem status
         },
         maintenance: {
           last_maintenance: tool.last_maintenance,
@@ -155,6 +154,16 @@ class UnifiedItemService {
       const stockLevels = await masterDataApi.getStockLevels({ skuId: sku.id });
       const currentStock = stockLevels.reduce((total, level) => total + level.current_quantity, 0);
 
+      // Map SKU status to UnifiedItem status
+      const mapSKUStatus = (skuStatus: string): 'available' | 'in-use' | 'maintenance' | 'inactive' => {
+        switch (skuStatus) {
+          case 'active': return 'available';
+          case 'discontinued': return 'inactive';
+          case 'inactive': return 'inactive';
+          default: return 'available';
+        }
+      };
+
       return {
         id: sku.id,
         type: 'SKU',
@@ -174,7 +183,7 @@ class UnifiedItemService {
           current: currentStock,
           min: sku.min_stock,
           max: sku.max_stock,
-          status: sku.status
+          status: mapSKUStatus(sku.status)
         },
         supplier: sku.default_supplier_id,
         created_at: sku.created_at,
@@ -213,6 +222,8 @@ class UnifiedItemService {
           location_id: 'MAIN_WAREHOUSE', // Default location
           movement_type: 'out',
           quantity: 1,
+          unit_cost: null,
+          reference_document: null,
           user_id: userId,
           timestamp: new Date().toISOString(),
           notes: 'Retirada automática via QR Scanner'
@@ -273,6 +284,8 @@ class UnifiedItemService {
           location_id: 'MAIN_WAREHOUSE',
           movement_type: 'in',
           quantity: 1,
+          unit_cost: null,
+          reference_document: null,
           user_id: userId,
           timestamp: new Date().toISOString(),
           notes: condition ? `Devolução com observação: ${condition}` : 'Devolução automática via QR Scanner'
@@ -341,3 +354,5 @@ class UnifiedItemService {
 }
 
 export const unifiedItemService = new UnifiedItemService();
+
+}
