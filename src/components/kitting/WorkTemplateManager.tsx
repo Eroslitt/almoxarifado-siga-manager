@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -424,7 +423,7 @@ export const WorkTemplateManager = () => {
                       {template.items.slice(0, 3).map((item) => (
                         <div key={item.id} className="flex items-center justify-between text-sm">
                           <span className="truncate">{item.tool.name}</span>
-                          <Badge className={getPriorityColor(item.priority)} size="sm">
+                          <Badge className={getPriorityColor(item.priority)}>
                             {item.priority === 'essential' ? 'ESS' : 
                              item.priority === 'recommended' ? 'REC' : 'OPT'}
                           </Badge>
