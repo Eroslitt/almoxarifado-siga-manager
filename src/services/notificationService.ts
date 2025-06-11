@@ -1,3 +1,4 @@
+
 interface NotificationConfig {
   title: string;
   body: string;
@@ -83,8 +84,7 @@ class NotificationService {
           tag: config.tag || `siga-${Date.now()}`,
           data: config.data,
           requireInteraction: config.requireInteraction || false,
-          silent: config.silent || false,
-          vibrate: [200, 100, 200]
+          silent: config.silent || false
         };
 
         // Add actions only if supported by the service worker
