@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,9 @@ import { SKUManager } from '@/components/masterdata/SKUManager';
 import { SupplierManager } from '@/components/masterdata/SupplierManager';
 import { LocationManager } from '@/components/masterdata/LocationManager';
 import { CategoryManager } from '@/components/masterdata/CategoryManager';
+import { DataImportExport } from '@/components/masterdata/DataImportExport';
+import { DataQualityDashboard } from '@/components/masterdata/DataQualityDashboard';
+import { AuditTrail } from '@/components/masterdata/AuditTrail';
 import { masterDataAnalytics } from '@/services/masterDataAnalytics';
 import { realTimeSync } from '@/services/realTimeSync';
 import { useToast } from '@/hooks/use-toast';
