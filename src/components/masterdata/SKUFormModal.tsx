@@ -21,12 +21,17 @@ export const SKUFormModal = ({ isOpen, onClose, onSuccess, sku }: SKUFormModalPr
   const [formData, setFormData] = useState({
     sku_code: sku?.sku_code || '',
     description: sku?.description || '',
+    technical_specs: sku?.technical_specs || '',
     category_id: sku?.category_id || '',
+    subcategory_id: sku?.subcategory_id || '',
     unit_of_measure: sku?.unit_of_measure || 'piece',
-    unit_cost: sku?.unit_cost || '',
+    weight: sku?.weight || '',
+    abc_classification: sku?.abc_classification || 'C',
+    xyz_classification: sku?.xyz_classification || 'Z',
     min_stock: sku?.min_stock || '',
     max_stock: sku?.max_stock || '',
-    abc_classification: sku?.abc_classification || 'C',
+    reorder_point: sku?.reorder_point || '',
+    default_supplier_id: sku?.default_supplier_id || '',
     status: sku?.status || 'active'
   });
   const [loading, setLoading] = useState(false);
@@ -41,9 +46,10 @@ export const SKUFormModal = ({ isOpen, onClose, onSuccess, sku }: SKUFormModalPr
     try {
       const validation = validationService.validateSKU({
         ...formData,
-        unit_cost: parseFloat(formData.unit_cost),
+        weight: formData.weight ? parseFloat(formData.weight) : null,
         min_stock: parseInt(formData.min_stock),
-        max_stock: parseInt(formData.max_stock)
+        max_stock: parseInt(formData.max_stock),
+        reorder_point: parseInt(formData.reorder_point)
       });
 
       if (!validation.isValid) {
@@ -53,10 +59,23 @@ export const SKUFormModal = ({ isOpen, onClose, onSuccess, sku }: SKUFormModalPr
       }
 
       const skuData = {
-        ...formData,
-        unit_cost: parseFloat(formData.unit_cost),
+        sku_code: formData.sku_code,
+        description: formData.description,
+        technical_specs: formData.technical_specs || null,
+        unit_of_measure: formData.unit_of_measure as 'piece' | 'kg' | 'liter' | 'box' | 'meter' | 'pack',
+        dimensions: null,
+        weight: formData.weight ? parseFloat(formData.weight) : null,
+        abc_classification: formData.abc_classification as 'A' | 'B' | 'C',
+        xyz_classification: formData.xyz_classification as 'X' | 'Y' | 'Z',
         min_stock: parseInt(formData.min_stock),
-        max_stock: parseInt(formData.max_stock)
+        max_stock: parseInt(formData.max_stock),
+        reorder_point: parseInt(formData.reorder_point),
+        default_supplier_id: formData.default_supplier_id || null,
+        alternative_suppliers: null,
+        photo_url: null,
+        category_id: formData.category_id || null,
+        subcategory_id: formData.subcategory_id || null,
+        status: formData.status as 'active' | 'inactive' | 'discontinued'
       };
 
       if (sku) {
@@ -89,7 +108,7 @@ export const SKUFormModal = ({ isOpen, onClose, onSuccess, sku }: SKUFormModalPr
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{sku ? 'Editar SKU' : 'Novo SKU'}</DialogTitle>
         </DialogHeader>
@@ -128,7 +147,8 @@ export const SKUFormModal = ({ isOpen, onClose, onSuccess, sku }: SKUFormModalPr
                   <SelectItem value="pack">Pacote</SelectItem>
                   <SelectItem value="meter">Metro</SelectItem>
                   <SelectItem value="liter">Litro</SelectItem>
-                  <SelectItem value="kilogram">Quilograma</SelectItem>
+                  <SelectItem value="kg">Quilograma</SelectItem>
+                  <SelectItem value="box">Caixa</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -145,17 +165,26 @@ export const SKUFormModal = ({ isOpen, onClose, onSuccess, sku }: SKUFormModalPr
             />
           </div>
 
+          <div>
+            <Label htmlFor="technical_specs">Especificações Técnicas</Label>
+            <Textarea
+              id="technical_specs"
+              value={formData.technical_specs}
+              onChange={(e) => setFormData({...formData, technical_specs: e.target.value})}
+              placeholder="Especificações técnicas detalhadas"
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="unit_cost">Custo Unitário (R$)*</Label>
+              <Label htmlFor="weight">Peso (kg)</Label>
               <Input
-                id="unit_cost"
+                id="weight"
                 type="number"
-                step="0.01"
-                value={formData.unit_cost}
-                onChange={(e) => setFormData({...formData, unit_cost: e.target.value})}
-                placeholder="0.00"
-                required
+                step="0.001"
+                value={formData.weight}
+                onChange={(e) => setFormData({...formData, weight: e.target.value})}
+                placeholder="0.000"
               />
             </div>
 
@@ -186,6 +215,30 @@ export const SKUFormModal = ({ isOpen, onClose, onSuccess, sku }: SKUFormModalPr
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
+              <Label htmlFor="reorder_point">Ponto de Reposição*</Label>
+              <Input
+                id="reorder_point"
+                type="number"
+                value={formData.reorder_point}
+                onChange={(e) => setFormData({...formData, reorder_point: e.target.value})}
+                placeholder="0"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="default_supplier_id">Fornecedor Padrão</Label>
+              <Input
+                id="default_supplier_id"
+                value={formData.default_supplier_id}
+                onChange={(e) => setFormData({...formData, default_supplier_id: e.target.value})}
+                placeholder="ID do fornecedor"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
               <Label htmlFor="abc_classification">Classificação ABC</Label>
               <Select value={formData.abc_classification} onValueChange={(value) => setFormData({...formData, abc_classification: value})}>
                 <SelectTrigger>
@@ -200,6 +253,20 @@ export const SKUFormModal = ({ isOpen, onClose, onSuccess, sku }: SKUFormModalPr
             </div>
 
             <div>
+              <Label htmlFor="xyz_classification">Classificação XYZ</Label>
+              <Select value={formData.xyz_classification} onValueChange={(value) => setFormData({...formData, xyz_classification: value})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="X">X (Previsível)</SelectItem>
+                  <SelectItem value="Y">Y (Sazonal)</SelectItem>
+                  <SelectItem value="Z">Z (Irregular)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <Label htmlFor="status">Status</Label>
               <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
                 <SelectTrigger>
@@ -208,6 +275,7 @@ export const SKUFormModal = ({ isOpen, onClose, onSuccess, sku }: SKUFormModalPr
                 <SelectContent>
                   <SelectItem value="active">Ativo</SelectItem>
                   <SelectItem value="inactive">Inativo</SelectItem>
+                  <SelectItem value="discontinued">Descontinuado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
