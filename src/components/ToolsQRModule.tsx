@@ -1,14 +1,15 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToolsHeader } from '@/components/tools/ToolsHeader';
 import { ToolsStats } from '@/components/tools/ToolsStats';
 import { ToolsOverview } from '@/components/tools/ToolsOverview';
 import { ToolsManagement } from '@/components/tools/ToolsManagement';
 import { QRScanner } from '@/components/tools/QRScanner';
-import { EnhancedQRScanner } from '@/components/tools/EnhancedQRScanner';
+import { SmartQRScanner } from '@/components/tools/SmartQRScanner';
 import { ToolsReports } from '@/components/tools/ToolsReports';
-import { RecentMovements } from '@/components/tools/RecentMovements';
 import { RealTimeMovements } from '@/components/tools/RealTimeMovements';
+import { RealTimeMovementsDashboard } from '@/components/tools/RealTimeMovementsDashboard';
 import { QRCodeGenerator } from '@/components/tools/QRCodeGenerator';
 import { LabelPrinter } from '@/components/tools/LabelPrinter';
 import { AlertsManagement } from '@/components/tools/AlertsManagement';
@@ -16,10 +17,76 @@ import { ReservationsManagement } from '@/components/tools/ReservationsManagemen
 import { MaintenanceManagement } from '@/components/tools/MaintenanceManagement';
 import { WorkTemplateManager } from '@/components/kitting/WorkTemplateManager';
 import { KittingCheckout } from '@/components/kitting/KittingCheckout';
-import { SmartQRScanner } from '@/components/tools/SmartQRScanner';
-import { RealTimeMovementsDashboard } from '@/components/tools/RealTimeMovementsDashboard';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { TraceabilityReports } from '@/components/reports/TraceabilityReports';
+import { cacheService } from '@/services/cacheService';
+import { notificationService } from '@/services/notificationService';
+import { reservationService } from '@/services/reservationService';
+import { webSocketService } from '@/services/webSocketService';
 
 export const ToolsQRModule = () => {
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize all services
+  useEffect(() => {
+    const initializeServices = async () => {
+      console.log('🚀 Initializing SIGA Advanced Services...');
+      
+      try {
+        // Initialize services in parallel
+        await Promise.all([
+          cacheService.init(),
+          notificationService.init(),
+          reservationService.init(),
+          webSocketService.connect()
+        ]);
+
+        // Register service worker for PWA
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('✅ Service Worker registered:', registration);
+            })
+            .catch(error => {
+              console.error('Service Worker registration failed:', error);
+            });
+        }
+
+        // Setup real-time event handlers
+        webSocketService.subscribe('tool_movement', (data) => {
+          console.log('🔧 Real-time tool movement:', data);
+          notificationService.showToolMovement(data.tool.name, data.user.name, data.type);
+        });
+
+        webSocketService.subscribe('stock_alert', (data) => {
+          console.log('📦 Real-time stock alert:', data);
+          notificationService.showStockAlert(data.item, data.currentStock, data.minStock);
+        });
+
+        setIsInitialized(true);
+        console.log('✅ All SIGA services initialized successfully');
+
+        // Show initialization notification
+        await notificationService.show({
+          title: '🚀 SIGA Inicializado',
+          body: 'Sistema SGF-QR carregado com todos os recursos avançados',
+          tag: 'siga-initialized'
+        });
+
+      } catch (error) {
+        console.error('❌ Error initializing services:', error);
+        setIsInitialized(true); // Continue anyway
+      }
+    };
+
+    initializeServices();
+
+    // Cleanup on unmount
+    return () => {
+      webSocketService.disconnect();
+    };
+  }, []);
+
   // Mock data para demonstração
   const toolsStats = {
     total: 145,
@@ -27,38 +94,6 @@ export const ToolsQRModule = () => {
     inUse: 35,
     maintenance: 12
   };
-
-  const recentMovements = [
-    {
-      id: 1,
-      tool: 'Furadeira de Impacto Makita',
-      toolId: 'FER-08172',
-      user: 'João Silva',
-      action: 'Retirada',
-      timestamp: '2024-06-11 14:30',
-      status: 'in-use'
-    },
-    {
-      id: 2,
-      tool: 'Chave de Fenda Philips',
-      toolId: 'FER-03945',
-      user: 'Maria Santos',
-      action: 'Devolução',
-      timestamp: '2024-06-11 14:15',
-      status: 'available',
-      condition: 'Perfeita'
-    },
-    {
-      id: 3,
-      tool: 'Alicate Universal',
-      toolId: 'FER-05621',
-      user: 'Carlos Oliveira',
-      action: 'Devolução',
-      timestamp: '2024-06-11 13:45',
-      status: 'maintenance',
-      condition: 'Cabo com mau contato'
-    }
-  ];
 
   // Mock tools para o gerador/impressora
   const mockTools = [
@@ -98,6 +133,18 @@ export const ToolsQRModule = () => {
     }
   ];
 
+  if (!isInitialized) {
+    return (
+      <div className="p-6 flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Inicializando SGF-QR Avançado...</p>
+          <p className="text-sm text-gray-500 mt-1">Carregando cache, notificações e serviços em tempo real</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <ToolsHeader />
@@ -111,6 +158,7 @@ export const ToolsQRModule = () => {
           <TabsTrigger value="scanner">QR Scanner</TabsTrigger>
           <TabsTrigger value="smart-scanner">Smart Scanner</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard Tempo Real</TabsTrigger>
+          <TabsTrigger value="notifications">Central Notificações</TabsTrigger>
           <TabsTrigger value="kitting">Kitting</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="qr-generator">Gerar QR</TabsTrigger>
@@ -118,6 +166,7 @@ export const ToolsQRModule = () => {
           <TabsTrigger value="alerts">Alertas</TabsTrigger>
           <TabsTrigger value="reservations">Reservas</TabsTrigger>
           <TabsTrigger value="maintenance">Manutenção</TabsTrigger>
+          <TabsTrigger value="traceability">Rastreabilidade</TabsTrigger>
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
         </TabsList>
 
@@ -144,8 +193,8 @@ export const ToolsQRModule = () => {
           <RealTimeMovementsDashboard />
         </TabsContent>
 
-        <TabsContent value="enhanced-scanner" className="space-y-4">
-          <EnhancedQRScanner />
+        <TabsContent value="notifications" className="space-y-4">
+          <NotificationCenter />
         </TabsContent>
 
         <TabsContent value="kitting" className="space-y-4">
@@ -177,6 +226,10 @@ export const ToolsQRModule = () => {
 
         <TabsContent value="maintenance" className="space-y-4">
           <MaintenanceManagement />
+        </TabsContent>
+
+        <TabsContent value="traceability" className="space-y-4">
+          <TraceabilityReports />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-4">

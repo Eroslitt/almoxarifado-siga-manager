@@ -13,29 +13,133 @@ if (isDemo) {
   console.warn('⚠️ Using demo Supabase configuration. All API calls will use mock data.');
 }
 
-// Create a mock client that doesn't make real requests when in demo mode
-export const supabase = isDemo ? 
-  {
-    from: () => ({
-      select: () => Promise.resolve({ data: [], error: null }),
-      insert: () => Promise.resolve({ data: [], error: null }),
-      update: () => Promise.resolve({ data: [], error: null }),
-      delete: () => Promise.resolve({ data: [], error: null }),
+// Mock user data for demo mode
+const mockUser = {
+  id: 'demo-user-123',
+  email: 'demo@siga.com',
+  user_metadata: {
+    name: 'Demo User',
+    department: 'Almoxarifado'
+  },
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString()
+};
+
+// Create a comprehensive mock client for demo mode
+const createMockClient = () => ({
+  from: (table: string) => ({
+    select: (columns?: string) => Promise.resolve({ 
+      data: table === 'users' ? [mockUser] : [], 
+      error: null 
     }),
-    auth: {
-      signUp: () => Promise.resolve({ data: null, error: null }),
-      signIn: () => Promise.resolve({ data: null, error: null }),
-      signOut: () => Promise.resolve({ error: null }),
-      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+    insert: (data: any) => Promise.resolve({ 
+      data: Array.isArray(data) ? data : [data], 
+      error: null 
+    }),
+    update: (data: any) => Promise.resolve({ 
+      data: Array.isArray(data) ? data : [data], 
+      error: null 
+    }),
+    delete: () => Promise.resolve({ data: [], error: null }),
+    eq: function(column: string, value: any) { return this; },
+    single: function() { 
+      return Promise.resolve({ 
+        data: table === 'users' ? mockUser : {}, 
+        error: null 
+      }); 
     },
-    storage: {
-      from: () => ({
-        upload: () => Promise.resolve({ data: null, error: null }),
-        download: () => Promise.resolve({ data: null, error: null }),
+    order: function(column: string, options?: any) { return this; },
+    limit: function(count: number) { return this; },
+    range: function(from: number, to: number) { return this; },
+    in: function(column: string, values: any[]) { return this; },
+    or: function(filters: string) { return this; },
+    gte: function(column: string, value: any) { return this; },
+    lte: function(column: string, value: any) { return this; },
+    like: function(column: string, pattern: string) { return this; },
+    ilike: function(column: string, pattern: string) { return this; }
+  }),
+  auth: {
+    signUp: (options: any) => Promise.resolve({ 
+      data: { user: mockUser, session: { user: mockUser, access_token: 'demo-token' } }, 
+      error: null 
+    }),
+    signInWithPassword: (options: any) => Promise.resolve({ 
+      data: { user: mockUser, session: { user: mockUser, access_token: 'demo-token' } }, 
+      error: null 
+    }),
+    signOut: () => Promise.resolve({ error: null }),
+    getUser: () => Promise.resolve({ 
+      data: { user: mockUser }, 
+      error: null 
+    }),
+    getSession: () => Promise.resolve({ 
+      data: { session: { user: mockUser, access_token: 'demo-token' } }, 
+      error: null 
+    }),
+    onAuthStateChange: (callback: (event: string, session: any) => void) => {
+      // Simulate initial session
+      setTimeout(() => {
+        callback('SIGNED_IN', { user: mockUser, access_token: 'demo-token' });
+      }, 100);
+      
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => console.log('Demo: Auth subscription unsubscribed')
+          }
+        }
+      };
+    },
+    updateUser: (data: any) => Promise.resolve({ 
+      data: { user: { ...mockUser, ...data } }, 
+      error: null 
+    })
+  },
+  storage: {
+    from: (bucket: string) => ({
+      upload: (path: string, file: any) => Promise.resolve({ 
+        data: { path, fullPath: `${bucket}/${path}` }, 
+        error: null 
       }),
-    },
-  } as any :
-  createClient<Database>(supabaseUrl, supabaseAnonKey);
+      download: (path: string) => Promise.resolve({ 
+        data: new Blob(['demo file content']), 
+        error: null 
+      }),
+      remove: (paths: string[]) => Promise.resolve({ 
+        data: paths.map(path => ({ name: path })), 
+        error: null 
+      }),
+      getPublicUrl: (path: string) => ({ 
+        data: { publicUrl: `https://demo.supabase.co/storage/v1/object/public/${bucket}/${path}` }
+      })
+    })
+  },
+  functions: {
+    invoke: (functionName: string, options?: any) => Promise.resolve({
+      data: { message: `Demo response from ${functionName}` },
+      error: null
+    })
+  },
+  realtime: {
+    channel: (topic: string) => ({
+      on: (event: string, callback: (payload: any) => void) => {
+        console.log(`Demo: Listening to ${event} on ${topic}`);
+        return this;
+      },
+      subscribe: () => {
+        console.log(`Demo: Subscribed to realtime channel ${topic}`);
+        return Promise.resolve('SUBSCRIBED');
+      },
+      unsubscribe: () => {
+        console.log(`Demo: Unsubscribed from ${topic}`);
+        return Promise.resolve('UNSUBSCRIBED');
+      }
+    })
+  }
+});
+
+// Create the client
+export const supabase = isDemo ? createMockClient() as any : createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 export const isDemoMode = isDemo;
 
