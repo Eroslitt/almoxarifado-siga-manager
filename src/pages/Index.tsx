@@ -1,12 +1,14 @@
+
 import { useState } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { Dashboard } from '@/components/Dashboard';
+import { MasterDataModule } from '@/components/MasterDataModule';
 import { StockModule } from '@/components/StockModule';
 import { ToolsQRModule } from '@/components/ToolsQRModule';
 import { ReceivingModule } from '@/components/ReceivingModule';
 import { ShippingModule } from '@/components/ShippingModule';
 import { ReportsModule } from '@/components/ReportsModule';
-import { MasterDataModule } from '@/components/MasterDataModule';
+import { Toaster } from '@/components/ui/toaster';
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -33,11 +35,12 @@ const Index = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
       <main className="flex-1 overflow-auto">
         {renderModule()}
       </main>
+      <Toaster />
     </div>
   );
 };

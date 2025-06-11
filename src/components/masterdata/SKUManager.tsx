@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,57 +16,95 @@ import {
   AlertTriangle,
   CheckCircle
 } from 'lucide-react';
+import { SKUFormModal } from './SKUFormModal';
+import { masterDataApi } from '@/services/masterDataApi';
+import { useToast } from '@/hooks/use-toast';
 
 export const SKUManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedClassification, setSelectedClassification] = useState('all');
+  const [skus, setSKUs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedSKU, setSelectedSKU] = useState<any>(null);
+  const { toast } = useToast();
 
-  // Mock data
-  const skus = [
-    {
-      id: '1',
-      sku_code: 'PAR-M6-20',
-      description: 'Parafuso Sextavado M6 x 20mm Aço Inox',
-      unit_of_measure: 'piece',
-      abc_classification: 'A',
-      xyz_classification: 'X',
-      current_stock: 2450,
-      min_stock: 500,
-      max_stock: 5000,
-      status: 'active',
-      category: 'Ferramentas',
-      supplier: 'Parafusos & Cia'
-    },
-    {
-      id: '2',
-      sku_code: 'CAP-220UF',
-      description: 'Capacitor Eletrolítico 220µF 25V',
-      unit_of_measure: 'piece',
-      abc_classification: 'B',
-      xyz_classification: 'Y',
-      current_stock: 85,
-      min_stock: 100,
-      max_stock: 500,
-      status: 'active',
-      category: 'Eletrônicos',
-      supplier: 'TechParts Ltda'
-    },
-    {
-      id: '3',
-      sku_code: 'LUV-SEG-P',
-      description: 'Luva de Segurança Tamanho P Nitrilica',
-      unit_of_measure: 'pack',
-      abc_classification: 'C',
-      xyz_classification: 'Z',
-      current_stock: 120,
-      min_stock: 50,
-      max_stock: 200,
-      status: 'active',
-      category: 'EPI',
-      supplier: 'Segurança Total'
+  useEffect(() => {
+    loadSKUs();
+  }, []);
+
+  const loadSKUs = async () => {
+    setLoading(true);
+    try {
+      const data = await masterDataApi.getSKUs();
+      setSKUs(data);
+    } catch (error) {
+      console.error('Erro ao carregar SKUs:', error);
+      // Use mock data if API fails
+      setSKUs([
+        {
+          id: '1',
+          sku_code: 'PAR-M6-20',
+          description: 'Parafuso Sextavado M6 x 20mm Aço Inox',
+          unit_of_measure: 'piece',
+          abc_classification: 'A',
+          xyz_classification: 'X',
+          current_stock: 2450,
+          min_stock: 500,
+          max_stock: 5000,
+          status: 'active',
+          category: 'Ferramentas',
+          supplier: 'Parafusos & Cia'
+        },
+        {
+          id: '2',
+          sku_code: 'CAP-220UF',
+          description: 'Capacitor Eletrolítico 220µF 25V',
+          unit_of_measure: 'piece',
+          abc_classification: 'B',
+          xyz_classification: 'Y',
+          current_stock: 85,
+          min_stock: 100,
+          max_stock: 500,
+          status: 'active',
+          category: 'Eletrônicos',
+          supplier: 'TechParts Ltda'
+        }
+      ]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const handleEdit = (sku: any) => {
+    setSelectedSKU(sku);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este SKU?')) return;
+
+    try {
+      await masterDataApi.deleteSKU(id);
+      toast({
+        title: "Sucesso",
+        description: "SKU excluído com sucesso",
+      });
+      loadSKUs();
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: (error as Error).message || "Erro ao excluir SKU",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleModalClose = () => {
+    setShowModal(false);
+    setSelectedSKU(null);
+  };
 
   const getClassificationColor = (classification: string) => {
     switch (classification) {
@@ -92,6 +130,15 @@ export const SKUManager = () => {
     return matchesSearch && matchesCategory && matchesClassification;
   });
 
+  if (loading) {
+    return (
+      <div className="text-center p-6">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-2 text-gray-600">Carregando SKUs...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -100,7 +147,7 @@ export const SKUManager = () => {
           <h2 className="text-2xl font-bold text-gray-900">Gestão de SKUs</h2>
           <p className="text-gray-600">Cadastro e controle de itens do estoque</p>
         </div>
-        <Button>
+        <Button onClick={() => setShowModal(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Novo SKU
         </Button>
@@ -111,7 +158,9 @@ export const SKUManager = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">245</div>
+              <div className="text-2xl font-bold text-red-600">
+                {skus.filter(s => s.abc_classification === 'A').length}
+              </div>
               <div className="text-sm text-gray-600">Classe A (80%)</div>
             </div>
           </CardContent>
@@ -119,7 +168,9 @@ export const SKUManager = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">1,234</div>
+              <div className="text-2xl font-bold text-yellow-600">
+                {skus.filter(s => s.abc_classification === 'B').length}
+              </div>
               <div className="text-sm text-gray-600">Classe B (15%)</div>
             </div>
           </CardContent>
@@ -127,7 +178,9 @@ export const SKUManager = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">1,368</div>
+              <div className="text-2xl font-bold text-green-600">
+                {skus.filter(s => s.abc_classification === 'C').length}
+              </div>
               <div className="text-sm text-gray-600">Classe C (5%)</div>
             </div>
           </CardContent>
@@ -135,7 +188,9 @@ export const SKUManager = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">23</div>
+              <div className="text-2xl font-bold text-red-600">
+                {skus.filter(s => s.current_stock <= s.min_stock).length}
+              </div>
               <div className="text-sm text-gray-600">Estoque Crítico</div>
             </div>
           </CardContent>
@@ -251,10 +306,15 @@ export const SKUManager = () => {
                       <Button variant="outline" size="sm">
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(sku)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleDelete(sku.id)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -265,6 +325,13 @@ export const SKUManager = () => {
           </div>
         </CardContent>
       </Card>
+
+      <SKUFormModal
+        isOpen={showModal}
+        onClose={handleModalClose}
+        onSuccess={loadSKUs}
+        sku={selectedSKU}
+      />
     </div>
   );
 };
