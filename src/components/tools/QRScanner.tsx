@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { toolsApi } from '@/services/toolsApi';
 import { Tool } from '@/types/database';
+import { QRCodeReader } from './QRCodeReader';
 import { 
   QrCode, 
   Camera, 
@@ -25,6 +25,7 @@ export const QRScanner = () => {
   const [conditionNote, setConditionNote] = useState('');
   const [showConditionForm, setShowConditionForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -42,6 +43,77 @@ export const QRScanner = () => {
     last_maintenance: '2024-05-10',
     created_at: '2024-01-15T00:00:00Z',
     updated_at: '2024-01-15T00:00:00Z'
+  };
+
+  const handleQRCodeScanned = async (decodedText: string) => {
+    setShowScanner(false);
+    setLoading(true);
+
+    try {
+      console.log('QR Code scanned:', decodedText);
+      
+      // Parse do QR code estruturado
+      let toolId: string;
+      try {
+        const qrData = JSON.parse(decodedText);
+        toolId = qrData.toolId;
+      } catch {
+        // Fallback para QR codes simples (apenas o ID)
+        toolId = decodedText;
+      }
+
+      // Buscar informações da ferramenta
+      const { data: tools } = await toolsApi.getTools({ 
+        search: toolId,
+        limit: 1 
+      });
+
+      const tool = tools.find(t => t.id === toolId || t.qr_code === decodedText);
+
+      if (!tool) {
+        toast({
+          title: "Ferramenta não encontrada",
+          description: `Nenhuma ferramenta encontrada com o código: ${toolId}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setScannedTool(tool);
+
+      toast({
+        title: "QR Code lido com sucesso",
+        description: `Ferramenta encontrada: ${tool.name}`,
+      });
+
+    } catch (error) {
+      console.error('Erro ao processar QR code:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao processar QR code",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleScanError = (errorMessage: string) => {
+    console.warn('QR Scan error:', errorMessage);
+    // Não mostrar toast para erros comuns de scanning
+    if (!errorMessage.includes('No QR code found')) {
+      toast({
+        title: "Erro no Scanner",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const startScanning = (mode: 'checkout' | 'checkin') => {
+    setScanMode(mode);
+    setShowScanner(true);
+    setScannedTool(null);
   };
 
   const handleScanSimulation = () => {
@@ -150,6 +222,7 @@ export const QRScanner = () => {
     setScannedTool(null);
     setConditionNote('');
     setShowConditionForm(false);
+    setShowScanner(false);
   };
 
   if (!user) {
@@ -193,10 +266,20 @@ export const QRScanner = () => {
         </CardContent>
       </Card>
 
+      {/* Scanner QR Code Real */}
+      {showScanner && (
+        <QRCodeReader
+          isActive={showScanner}
+          onScanSuccess={handleQRCodeScanned}
+          onScanError={handleScanError}
+          onCancel={() => setShowScanner(false)}
+        />
+      )}
+
       {/* Seleção de Ação */}
-      {!scanMode && (
+      {!scanMode && !showScanner && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setScanMode('checkout')}>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => startScanning('checkout')}>
             <CardContent className="p-6 text-center">
               <LogOut className="h-12 w-12 text-blue-600 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">RETIRAR</h3>
@@ -204,7 +287,7 @@ export const QRScanner = () => {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setScanMode('checkin')}>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => startScanning('checkin')}>
             <CardContent className="p-6 text-center">
               <LogIn className="h-12 w-12 text-green-600 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">DEVOLVER</h3>
@@ -243,7 +326,7 @@ export const QRScanner = () => {
       )}
 
       {/* Resultado do Scan - Checkout */}
-      {scanMode === 'checkout' && scannedTool && (
+      {scanMode === 'checkout' && scannedTool && !showScanner && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -288,7 +371,7 @@ export const QRScanner = () => {
       )}
 
       {/* Resultado do Scan - Checkin */}
-      {scanMode === 'checkin' && scannedTool && !showConditionForm && (
+      {scanMode === 'checkin' && scannedTool && !showConditionForm && !showScanner && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
