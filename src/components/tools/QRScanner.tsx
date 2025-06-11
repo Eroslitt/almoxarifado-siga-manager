@@ -41,6 +41,10 @@ export const QRScanner = () => {
     qr_code: 'FER-08172-QR',
     registration_date: '2024-01-15',
     last_maintenance: '2024-05-10',
+    next_maintenance: '2024-11-10',
+    usage_hours: 150,
+    maintenance_interval_hours: 200,
+    purchase_price: 450.00,
     created_at: '2024-01-15T00:00:00Z',
     updated_at: '2024-01-15T00:00:00Z'
   };

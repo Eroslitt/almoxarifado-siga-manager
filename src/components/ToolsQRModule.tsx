@@ -66,7 +66,11 @@ export const ToolsQRModule = () => {
       qr_code: 'FER-08172-QR',
       registration_date: '2024-01-15',
       last_maintenance: '2024-05-10',
+      next_maintenance: '2024-11-10',
       current_user_id: null,
+      usage_hours: 150,
+      maintenance_interval_hours: 200,
+      purchase_price: 450.00,
       created_at: '2024-01-15T00:00:00Z',
       updated_at: '2024-01-15T00:00:00Z'
     },
@@ -79,7 +83,11 @@ export const ToolsQRModule = () => {
       qr_code: 'FER-03945-QR',
       registration_date: '2024-02-20',
       last_maintenance: null,
+      next_maintenance: null,
       current_user_id: null,
+      usage_hours: 0,
+      maintenance_interval_hours: 0,
+      purchase_price: 15.50,
       created_at: '2024-02-20T00:00:00Z',
       updated_at: '2024-02-20T00:00:00Z'
     }
