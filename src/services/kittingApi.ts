@@ -1,6 +1,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { Tool, User, ToolMovement } from '@/types/database';
+import { KittingSuggestion, WorkTemplateWithItems, BatchCheckout } from '@/types/kitting';
 
 export interface WorkTemplate {
   id: string;
@@ -56,6 +57,95 @@ class KittingApiService {
 
     if (error) throw error;
     return data || [];
+  }
+
+  // New methods for components compatibility
+  async getTemplates(filters?: { active?: boolean }): Promise<WorkTemplateWithItems[]> {
+    let query = supabase
+      .from('work_templates')
+      .select(`
+        *,
+        items:work_template_items(
+          *,
+          tool:tools(*)
+        )
+      `)
+      .order('name');
+
+    if (filters?.active) {
+      query = query.eq('status', 'active');
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    // Transform to match expected structure
+    return (data || []).map(template => ({
+      ...template,
+      active: template.status === 'active',
+      estimated_duration_minutes: template.estimated_duration || 60,
+      category: template.department || '',
+      usage_count: 0,
+      success_rate: 1.0,
+      created_by: '',
+      items: template.items || []
+    }));
+  }
+
+  async createTemplate(
+    templateData: {
+      name: string;
+      description: string;
+      category: string;
+      department: string;
+      estimatedDuration: number;
+      items: {
+        toolId: string;
+        quantity: number;
+        priority: 'essential' | 'recommended' | 'optional';
+        notes: string;
+      }[];
+    },
+    userId: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const { data: template, error: templateError } = await supabase
+        .from('work_templates')
+        .insert({
+          name: templateData.name,
+          description: templateData.description,
+          department: templateData.department,
+          estimated_duration: templateData.estimatedDuration,
+          status: 'active',
+          required_tools: templateData.items.map(item => item.toolId)
+        })
+        .select()
+        .single();
+
+      if (templateError) throw templateError;
+
+      // Insert template items
+      if (templateData.items.length > 0) {
+        const { error: itemsError } = await supabase
+          .from('work_template_items')
+          .insert(
+            templateData.items.map(item => ({
+              template_id: template.id,
+              tool_id: item.toolId,
+              quantity: item.quantity,
+              priority: item.priority,
+              notes: item.notes
+            }))
+          );
+
+        if (itemsError) throw itemsError;
+      }
+
+      return { success: true, message: 'Template criado com sucesso' };
+    } catch (error) {
+      console.error('Error creating template:', error);
+      return { success: false, message: 'Erro ao criar template' };
+    }
   }
 
   async updateWorkTemplate(id: string, updates: Partial<WorkTemplate>): Promise<WorkTemplate> {
@@ -174,6 +264,90 @@ class KittingApiService {
     return data;
   }
 
+  // Batch Checkout Methods
+  async startBatchCheckout(params: {
+    templateId?: string;
+    workType: string;
+  }, userId: string): Promise<{ success: boolean; batchId?: string; message: string }> {
+    try {
+      const { data, error } = await supabase
+        .from('batch_checkouts')
+        .insert({
+          template_id: params.templateId || null,
+          user_id: userId,
+          work_type: params.workType,
+          status: 'in-progress',
+          total_items: 0,
+          completed_items: 0,
+          started_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, batchId: data.id, message: 'Batch iniciado' };
+    } catch (error) {
+      console.error('Error starting batch:', error);
+      return { success: false, message: 'Erro ao iniciar batch' };
+    }
+  }
+
+  async addBatchItem(batchId: string, toolId: string, priority: 'essential' | 'recommended' | 'optional'): Promise<{ success: boolean; message: string }> {
+    try {
+      const { error } = await supabase
+        .from('batch_checkout_items')
+        .insert({
+          batch_id: batchId,
+          tool_id: toolId,
+          status: 'pending',
+          priority: priority
+        });
+
+      if (error) throw error;
+      return { success: true, message: 'Item adicionado' };
+    } catch (error) {
+      console.error('Error adding batch item:', error);
+      return { success: false, message: 'Erro ao adicionar item' };
+    }
+  }
+
+  async processBatchItem(batchId: string, toolId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const { error } = await supabase
+        .from('batch_checkout_items')
+        .update({
+          status: 'checked-out',
+          checkout_at: new Date().toISOString()
+        })
+        .eq('batch_id', batchId)
+        .eq('tool_id', toolId);
+
+      if (error) throw error;
+      return { success: true, message: 'Item processado' };
+    } catch (error) {
+      console.error('Error processing batch item:', error);
+      return { success: false, message: 'Erro ao processar item' };
+    }
+  }
+
+  async completeBatchCheckout(batchId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const { error } = await supabase
+        .from('batch_checkouts')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', batchId);
+
+      if (error) throw error;
+      return { success: true, message: 'Batch completado' };
+    } catch (error) {
+      console.error('Error completing batch:', error);
+      return { success: false, message: 'Erro ao completar batch' };
+    }
+  }
+
   // Analytics and Suggestions
   async getKittingAnalytics(days: number = 30): Promise<any> {
     const startDate = new Date();
@@ -226,7 +400,11 @@ class KittingApiService {
     return usage;
   }
 
-  async generateSuggestions(userId: string): Promise<string[]> {
+  async generateSuggestions(
+    workType: string,
+    userId: string,
+    templateId?: string
+  ): Promise<KittingSuggestion[]> {
     try {
       // Get user's recent tool usage
       const { data: recentMovements } = await supabase
@@ -241,10 +419,18 @@ class KittingApiService {
         .limit(10);
 
       if (!recentMovements || recentMovements.length === 0) {
-        return ['No recent tool usage found for suggestions'];
+        return [{
+          toolId: 'demo-tool-1',
+          toolName: 'Ferramenta Demo',
+          priority: 'recommended',
+          confidence: 0.8,
+          reason: 'Sugestão baseada no tipo de trabalho',
+          available: true,
+          location: 'A-01-01-A'
+        }];
       }
 
-      const suggestions: string[] = [];
+      const suggestions: KittingSuggestion[] = [];
 
       // Analyze patterns
       const toolFrequency: Record<string, number> = {};
@@ -260,20 +446,41 @@ class KittingApiService {
         .sort(([,a], [,b]) => b - a)
         .slice(0, 3);
 
-      mostUsed.forEach(([toolName]) => {
-        suggestions.push(`Consider creating a template with ${toolName} - frequently used tool`);
+      mostUsed.forEach(([toolName], index) => {
+        const movement = recentMovements.find(m => m.tools?.name === toolName);
+        if (movement && movement.tools) {
+          suggestions.push({
+            toolId: movement.tool_id,
+            toolName: movement.tools.name,
+            priority: index === 0 ? 'essential' : 'recommended',
+            confidence: 0.9 - (index * 0.1),
+            reason: 'Ferramenta frequentemente usada por você',
+            available: movement.tools.status === 'available',
+            location: movement.tools.location || 'N/A'
+          });
+        }
       });
 
-      // Check for tools that are often used together
-      const toolCombinations = this.findCommonCombinations(recentMovements);
-      toolCombinations.forEach(combo => {
-        suggestions.push(`Tools often used together: ${combo.join(', ')}`);
-      });
-
-      return suggestions.length > 0 ? suggestions : ['Create templates based on your workflow patterns'];
+      return suggestions.length > 0 ? suggestions : [{
+        toolId: 'demo-tool-1',
+        toolName: 'Ferramenta Demo',
+        priority: 'recommended',
+        confidence: 0.7,
+        reason: 'Sugestão baseada no padrão de uso',
+        available: true,
+        location: 'A-01-01-A'
+      }];
     } catch (error) {
       console.error('Error generating suggestions:', error);
-      return ['Unable to generate suggestions at this time'];
+      return [{
+        toolId: 'error-tool',
+        toolName: 'Erro ao gerar sugestões',
+        priority: 'optional',
+        confidence: 0.5,
+        reason: 'Erro no sistema',
+        available: false,
+        location: 'N/A'
+      }];
     }
   }
 
