@@ -1,4 +1,3 @@
-
 import { toolsApi } from './toolsApi';
 import { masterDataApi } from './masterDataApi';
 import { Tool } from '@/types/database';
@@ -497,7 +496,11 @@ class EnhancedUnifiedItemService {
       category: qrData.offline_specs.category,
       specifications: {
         weight: qrData.offline_specs.weight,
-        dimensions: qrData.offline_specs.dimensions,
+        dimensions: qrData.offline_specs.dimensions && 
+          typeof qrData.offline_specs.dimensions === 'object' && 
+          'height' in qrData.offline_specs.dimensions ? 
+          qrData.offline_specs.dimensions as { height: number; width: number; depth: number } : 
+          undefined,
         technical_specs: 'Dados offline'
       },
       stock: {
