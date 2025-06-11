@@ -10,6 +10,9 @@ import { ToolsReports } from '@/components/tools/ToolsReports';
 import { RecentMovements } from '@/components/tools/RecentMovements';
 import { QRCodeGenerator } from '@/components/tools/QRCodeGenerator';
 import { LabelPrinter } from '@/components/tools/LabelPrinter';
+import { AlertsManagement } from '@/components/tools/AlertsManagement';
+import { ReservationsManagement } from '@/components/tools/ReservationsManagement';
+import { MaintenanceManagement } from '@/components/tools/MaintenanceManagement';
 
 export const ToolsQRModule = () => {
   // Mock data para demonstração
@@ -89,12 +92,16 @@ export const ToolsQRModule = () => {
       <ToolsStats stats={toolsStats} />
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="management">Gestão</TabsTrigger>
           <TabsTrigger value="scanner">QR Scanner</TabsTrigger>
           <TabsTrigger value="qr-generator">Gerar QR</TabsTrigger>
           <TabsTrigger value="labels">Etiquetas</TabsTrigger>
+          <TabsTrigger value="alerts">Alertas</TabsTrigger>
+          <TabsTrigger value="reservations">Reservas</TabsTrigger>
+          <TabsTrigger value="maintenance">Manutenção</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
         </TabsList>
 
@@ -119,6 +126,22 @@ export const ToolsQRModule = () => {
 
         <TabsContent value="labels" className="space-y-4">
           <LabelPrinter tools={mockTools} />
+        </TabsContent>
+
+        <TabsContent value="alerts" className="space-y-4">
+          <AlertsManagement />
+        </TabsContent>
+
+        <TabsContent value="reservations" className="space-y-4">
+          <ReservationsManagement />
+        </TabsContent>
+
+        <TabsContent value="maintenance" className="space-y-4">
+          <MaintenanceManagement />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-4">
+          <ToolsReports />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-4">
