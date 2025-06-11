@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { Dashboard } from '@/components/Dashboard';
@@ -7,6 +6,7 @@ import { ToolsQRModule } from '@/components/ToolsQRModule';
 import { ReceivingModule } from '@/components/ReceivingModule';
 import { ShippingModule } from '@/components/ShippingModule';
 import { ReportsModule } from '@/components/ReportsModule';
+import { MasterDataModule } from '@/components/MasterDataModule';
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -15,6 +15,8 @@ const Index = () => {
     switch (activeModule) {
       case 'dashboard':
         return <Dashboard />;
+      case 'masterdata':
+        return <MasterDataModule />;
       case 'stock':
         return <StockModule />;
       case 'tools-qr':

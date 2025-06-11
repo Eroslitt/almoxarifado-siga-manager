@@ -1,347 +1,302 @@
-import { supabase } from '@/lib/supabase';
-import { WorkTemplate, WorkTemplateItem, BatchCheckout, BatchCheckoutItem, KittingSuggestion, WorkTemplateWithItems } from '@/types/kitting';
-import { Tool } from '@/types/database';
 
-export interface CreateTemplateRequest {
+import { supabase } from '@/lib/supabase';
+import { Tool, User, ToolMovement } from '@/types/database';
+
+export interface WorkTemplate {
+  id: string;
   name: string;
   description: string;
-  category: string;
+  required_tools: string[];
+  estimated_duration: number;
   department: string;
-  estimatedDuration: number;
-  items: {
-    toolId: string;
-    quantity: number;
-    priority: 'essential' | 'recommended' | 'optional';
-    notes?: string;
-  }[];
+  status: 'active' | 'inactive';
+  created_at: string;
+  updated_at: string;
 }
 
-export interface StartBatchCheckoutRequest {
-  templateId?: string;
-  workType: string;
-  estimatedReturn?: string;
-  notes?: string;
+export interface KittingRequest {
+  id: string;
+  work_template_id: string;
+  user_id: string;
+  status: 'pending' | 'prepared' | 'delivered' | 'returned';
+  requested_at: string;
+  prepared_at: string | null;
+  delivered_at: string | null;
+  returned_at: string | null;
+  notes: string | null;
+}
+
+export interface KittingItem {
+  id: string;
+  kitting_request_id: string;
+  tool_id: string;
+  status: 'pending' | 'collected' | 'delivered' | 'returned';
+  collected_at: string | null;
+  condition_note: string | null;
 }
 
 class KittingApiService {
-  // Criar template de trabalho
-  async createTemplate(request: CreateTemplateRequest, userId: string): Promise<{ success: boolean; templateId?: string; message: string }> {
-    try {
-      // Criar template
-      const { data: template, error: templateError } = await supabase
-        .from('work_templates')
-        .insert({
-          name: request.name,
-          description: request.description,
-          category: request.category,
-          department: request.department,
-          estimated_duration_minutes: request.estimatedDuration,
-          created_by: userId,
-          active: true,
-          usage_count: 0,
-          success_rate: 0,
-          priority: 1
-        })
-        .select()
-        .single();
+  // Work Templates
+  async createWorkTemplate(template: Omit<WorkTemplate, 'id' | 'created_at' | 'updated_at'>): Promise<WorkTemplate> {
+    const { data, error } = await supabase
+      .from('work_templates')
+      .insert(template)
+      .select()
+      .single();
 
-      if (templateError || !template) {
-        return { success: false, message: 'Erro ao criar template' };
-      }
-
-      // Adicionar itens do template
-      const templateItems = request.items.map(item => ({
-        template_id: template.id,
-        tool_id: item.toolId,
-        quantity: item.quantity,
-        priority: item.priority,
-        notes: item.notes || null,
-        alternative_tool_ids: [],
-        usage_frequency: 0
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('work_template_items')
-        .insert(templateItems);
-
-      if (itemsError) {
-        return { success: false, message: 'Erro ao adicionar itens ao template' };
-      }
-
-      return { success: true, templateId: template.id, message: 'Template criado com sucesso' };
-    } catch (error) {
-      console.error('Erro ao criar template:', error);
-      return { success: false, message: 'Erro interno do servidor' };
-    }
+    if (error) throw error;
+    return data;
   }
 
-  // Listar templates
-  async getTemplates(filters: { category?: string; department?: string; active?: boolean } = {}): Promise<WorkTemplateWithItems[]> {
-    try {
-      let query = supabase
-        .from('work_templates')
-        .select(`
-          *,
-          work_template_items(
-            *,
-            tools(*)
-          )
-        `)
-        .order('usage_count', { ascending: false });
+  async getWorkTemplates(): Promise<WorkTemplate[]> {
+    const { data, error } = await supabase
+      .from('work_templates')
+      .select('*')
+      .order('name');
 
-      if (filters.category) {
-        query = query.eq('category', filters.category);
-      }
-
-      if (filters.department) {
-        query = query.eq('department', filters.department);
-      }
-
-      if (filters.active !== undefined) {
-        query = query.eq('active', filters.active);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Erro ao buscar templates:', error);
-        return [];
-      }
-
-      return data?.map(template => ({
-        ...template,
-        items: template.work_template_items?.map((item: any) => ({
-          ...item,
-          tool: item.tools
-        })) || []
-      })) || [];
-    } catch (error) {
-      console.error('Erro ao buscar templates:', error);
-      return [];
-    }
+    if (error) throw error;
+    return data || [];
   }
 
-  // Gerar sugestões inteligentes
-  async generateSuggestions(workType: string, userId: string, templateId?: string): Promise<KittingSuggestion[]> {
-    try {
-      let suggestions: KittingSuggestion[] = [];
+  async updateWorkTemplate(id: string, updates: Partial<WorkTemplate>): Promise<WorkTemplate> {
+    const { data, error } = await supabase
+      .from('work_templates')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-      if (templateId) {
-        // Buscar sugestões do template
-        const { data: template } = await supabase
-          .from('work_templates')
-          .select(`
-            *,
-            work_template_items(
-              *,
-              tools(*)
-            )
-          `)
-          .eq('id', templateId)
-          .single();
-
-        if (template?.work_template_items) {
-          suggestions = template.work_template_items.map((item: any) => ({
-            toolId: item.tool_id,
-            toolName: item.tools.name,
-            priority: item.priority,
-            confidence: 0.9,
-            reason: 'Definido no template',
-            available: item.tools.status === 'available',
-            location: item.tools.location
-          }));
-        }
-      } else {
-        // IA básica: analisar histórico de uso
-        const { data: movements } = await supabase
-          .from('tool_movements')
-          .select(`
-            tool_id,
-            tools(name, status, location)
-          `)
-          .eq('user_id', userId)
-          .eq('action', 'checkout')
-          .order('timestamp', { ascending: false })
-          .limit(50);
-
-        if (movements) {
-          const toolFrequency = movements.reduce((acc: any, movement: any) => {
-            acc[movement.tool_id] = (acc[movement.tool_id] || 0) + 1;
-            return acc;
-          }, {});
-
-          suggestions = Object.entries(toolFrequency)
-            .sort(([,a], [,b]) => (b as number) - (a as number))
-            .slice(0, 10)
-            .map(([toolId, frequency]) => {
-              const movement = movements.find((m: any) => m.tool_id === toolId);
-              const tool = movement?.tools;
-              return {
-                toolId,
-                toolName: tool?.name || 'Ferramenta',
-                priority: 'recommended' as const,
-                confidence: Math.min((frequency as number) / 10, 0.8),
-                reason: `Usado ${frequency} vezes recentemente`,
-                available: tool?.status === 'available',
-                location: tool?.location || ''
-              };
-            });
-        }
-      }
-
-      return suggestions;
-    } catch (error) {
-      console.error('Erro ao gerar sugestões:', error);
-      return [];
-    }
+    if (error) throw error;
+    return data;
   }
 
-  // Iniciar checkout em lote
-  async startBatchCheckout(request: StartBatchCheckoutRequest, userId: string): Promise<{ success: boolean; batchId?: string; message: string }> {
-    try {
-      const { data: batch, error } = await supabase
-        .from('batch_checkouts')
-        .insert({
-          template_id: request.templateId || null,
-          user_id: userId,
-          work_type: request.workType,
-          status: 'in-progress',
-          total_items: 0,
-          completed_items: 0,
-          started_at: new Date().toISOString(),
-          estimated_return: request.estimatedReturn || null,
-          notes: request.notes || null
-        })
-        .select()
-        .single();
+  async deleteWorkTemplate(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('work_templates')
+      .delete()
+      .eq('id', id);
 
-      if (error || !batch) {
-        return { success: false, message: 'Erro ao iniciar checkout em lote' };
-      }
-
-      return { success: true, batchId: batch.id, message: 'Checkout em lote iniciado' };
-    } catch (error) {
-      console.error('Erro ao iniciar checkout em lote:', error);
-      return { success: false, message: 'Erro interno do servidor' };
-    }
+    if (error) throw error;
   }
 
-  // Adicionar item ao batch
-  async addBatchItem(batchId: string, toolId: string, priority: 'essential' | 'recommended' | 'optional'): Promise<{ success: boolean; message: string }> {
-    try {
-      const { error } = await supabase
-        .from('batch_checkout_items')
-        .insert({
-          batch_id: batchId,
-          tool_id: toolId,
-          priority,
-          status: 'pending'
-        });
+  // Kitting Requests
+  async createKittingRequest(request: Omit<KittingRequest, 'id' | 'requested_at'>): Promise<KittingRequest> {
+    const { data, error } = await supabase
+      .from('kitting_requests')
+      .insert({
+        ...request,
+        requested_at: new Date().toISOString()
+      })
+      .select()
+      .single();
 
-      if (error) {
-        return { success: false, message: 'Erro ao adicionar item' };
-      }
-
-      // Atualizar contador do batch
-      await supabase.rpc('increment_batch_total', { batch_id: batchId });
-
-      return { success: true, message: 'Item adicionado ao checkout' };
-    } catch (error) {
-      console.error('Erro ao adicionar item ao batch:', error);
-      return { success: false, message: 'Erro interno do servidor' };
-    }
+    if (error) throw error;
+    return data;
   }
 
-  // Processar checkout de item do batch
-  async processBatchItem(batchId: string, toolId: string): Promise<{ success: boolean; message: string }> {
+  async getKittingRequests(filters?: { status?: string; userId?: string }): Promise<KittingRequest[]> {
+    let query = supabase
+      .from('kitting_requests')
+      .select(`
+        *,
+        work_templates(name, description),
+        users(name, department)
+      `)
+      .order('requested_at', { ascending: false });
+
+    if (filters?.status) {
+      query = query.eq('status', filters.status);
+    }
+
+    if (filters?.userId) {
+      query = query.eq('user_id', filters.userId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
+  async updateKittingRequestStatus(id: string, status: KittingRequest['status']): Promise<KittingRequest> {
+    const statusTimestamp = {
+      prepared: 'prepared_at',
+      delivered: 'delivered_at',
+      returned: 'returned_at'
+    }[status];
+
+    const updates: any = { status };
+    if (statusTimestamp) {
+      updates[statusTimestamp] = new Date().toISOString();
+    }
+
+    const { data, error } = await supabase
+      .from('kitting_requests')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  // Kitting Items
+  async getKittingItems(requestId: string): Promise<KittingItem[]> {
+    const { data, error } = await supabase
+      .from('kitting_items')
+      .select(`
+        *,
+        tools(name, status, location)
+      `)
+      .eq('kitting_request_id', requestId);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async updateKittingItemStatus(id: string, status: KittingItem['status'], conditionNote?: string): Promise<KittingItem> {
+    const updates: any = { status };
+    if (conditionNote) {
+      updates.condition_note = conditionNote;
+    }
+    if (status === 'collected') {
+      updates.collected_at = new Date().toISOString();
+    }
+
+    const { data, error } = await supabase
+      .from('kitting_items')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  // Analytics and Suggestions
+  async getKittingAnalytics(days: number = 30): Promise<any> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const { data: requests, error } = await supabase
+      .from('kitting_requests')
+      .select(`
+        *,
+        work_templates(name, department)
+      `)
+      .gte('requested_at', startDate.toISOString());
+
+    if (error) throw error;
+
+    // Calculate metrics
+    const totalRequests = requests?.length || 0;
+    const completedRequests = requests?.filter(r => r.status === 'returned').length || 0;
+    const avgCompletionTime = this.calculateAverageCompletionTime(requests || []);
+    const departmentUsage = this.calculateDepartmentUsage(requests || []);
+
+    return {
+      totalRequests,
+      completedRequests,
+      completionRate: totalRequests > 0 ? (completedRequests / totalRequests) * 100 : 0,
+      avgCompletionTime,
+      departmentUsage
+    };
+  }
+
+  private calculateAverageCompletionTime(requests: any[]): number {
+    const completed = requests.filter(r => r.returned_at && r.requested_at);
+    if (completed.length === 0) return 0;
+
+    const totalTime = completed.reduce((sum, request) => {
+      const start = new Date(request.requested_at).getTime();
+      const end = new Date(request.returned_at).getTime();
+      return sum + (end - start);
+    }, 0);
+
+    return Math.round(totalTime / completed.length / (1000 * 60 * 60)); // hours
+  }
+
+  private calculateDepartmentUsage(requests: any[]): Record<string, number> {
+    const usage: Record<string, number> = {};
+    requests.forEach(request => {
+      const dept = request.work_templates?.department || 'Unknown';
+      usage[dept] = (usage[dept] || 0) + 1;
+    });
+    return usage;
+  }
+
+  async generateSuggestions(userId: string): Promise<string[]> {
     try {
-      // Verificar se ferramenta está disponível
-      const { data: tool, error: toolError } = await supabase
-        .from('tools')
-        .select('*')
-        .eq('id', toolId)
-        .single();
-
-      if (toolError || !tool || tool.status !== 'available') {
-        return { success: false, message: 'Ferramenta não disponível' };
-      }
-
-      // Buscar informações do batch
-      const { data: batch } = await supabase
-        .from('batch_checkouts')
-        .select('user_id')
-        .eq('id', batchId)
-        .single();
-
-      if (!batch) {
-        return { success: false, message: 'Batch não encontrado' };
-      }
-
-      // Fazer checkout da ferramenta
-      const { error: updateError } = await supabase
-        .from('tools')
-        .update({
-          status: 'in-use',
-          current_user_id: batch.user_id,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', toolId);
-
-      if (updateError) {
-        return { success: false, message: 'Erro ao fazer checkout' };
-      }
-
-      // Registrar movimentação
-      await supabase
+      // Get user's recent tool usage
+      const { data: recentMovements } = await supabase
         .from('tool_movements')
-        .insert({
-          tool_id: toolId,
-          user_id: batch.user_id,
-          action: 'checkout',
-          timestamp: new Date().toISOString()
-        });
+        .select(`
+          tool_id,
+          tools(name, status, location)
+        `)
+        .eq('user_id', userId)
+        .eq('action', 'checkout')
+        .order('timestamp', { ascending: false })
+        .limit(10);
 
-      // Atualizar status do item no batch
-      await supabase
-        .from('batch_checkout_items')
-        .update({
-          status: 'checked-out',
-          scanned_at: new Date().toISOString(),
-          checkout_at: new Date().toISOString()
-        })
-        .eq('batch_id', batchId)
-        .eq('tool_id', toolId);
+      if (!recentMovements || recentMovements.length === 0) {
+        return ['No recent tool usage found for suggestions'];
+      }
 
-      // Incrementar contador de itens completados
-      await supabase.rpc('increment_batch_completed', { batch_id: batchId });
+      const suggestions: string[] = [];
 
-      return { success: true, message: 'Item processado com sucesso' };
+      // Analyze patterns
+      const toolFrequency: Record<string, number> = {};
+      recentMovements.forEach(movement => {
+        if (movement.tools) {
+          const toolName = movement.tools.name;
+          toolFrequency[toolName] = (toolFrequency[toolName] || 0) + 1;
+        }
+      });
+
+      // Generate suggestions based on frequency
+      const mostUsed = Object.entries(toolFrequency)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3);
+
+      mostUsed.forEach(([toolName]) => {
+        suggestions.push(`Consider creating a template with ${toolName} - frequently used tool`);
+      });
+
+      // Check for tools that are often used together
+      const toolCombinations = this.findCommonCombinations(recentMovements);
+      toolCombinations.forEach(combo => {
+        suggestions.push(`Tools often used together: ${combo.join(', ')}`);
+      });
+
+      return suggestions.length > 0 ? suggestions : ['Create templates based on your workflow patterns'];
     } catch (error) {
-      console.error('Erro ao processar item do batch:', error);
-      return { success: false, message: 'Erro interno do servidor' };
+      console.error('Error generating suggestions:', error);
+      return ['Unable to generate suggestions at this time'];
     }
   }
 
-  // Finalizar batch checkout
-  async completeBatchCheckout(batchId: string): Promise<{ success: boolean; message: string }> {
-    try {
-      const { error } = await supabase
-        .from('batch_checkouts')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', batchId);
-
-      if (error) {
-        return { success: false, message: 'Erro ao finalizar checkout' };
+  private findCommonCombinations(movements: any[]): string[][] {
+    // Simple algorithm to find tools used within the same day
+    const dailyUsage: Record<string, string[]> = {};
+    
+    movements.forEach(movement => {
+      if (movement.tools) {
+        const date = new Date(movement.timestamp).toDateString();
+        if (!dailyUsage[date]) dailyUsage[date] = [];
+        dailyUsage[date].push(movement.tools.name);
       }
+    });
 
-      return { success: true, message: 'Checkout em lote finalizado' };
-    } catch (error) {
-      console.error('Erro ao finalizar batch checkout:', error);
-      return { success: false, message: 'Erro interno do servidor' };
-    }
+    const combinations: string[][] = [];
+    Object.values(dailyUsage).forEach(tools => {
+      if (tools.length > 1) {
+        combinations.push([...new Set(tools)]); // Remove duplicates
+      }
+    });
+
+    return combinations.slice(0, 2); // Return top 2 combinations
   }
 }
 

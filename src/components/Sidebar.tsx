@@ -19,6 +19,7 @@ interface SidebarProps {
 export const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'masterdata', label: 'Master Data', icon: Settings },
     { id: 'stock', label: 'Gestão de Estoque', icon: Package },
     { id: 'tools-qr', label: 'Ferramentas QR', icon: QrCode },
     { id: 'receiving', label: 'Recebimento', icon: TruckIcon },
