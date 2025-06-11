@@ -435,7 +435,7 @@ class KittingApiService {
       // Analyze patterns
       const toolFrequency: Record<string, number> = {};
       recentMovements.forEach(movement => {
-        if (movement.tools) {
+        if (movement.tools && movement.tools.name) {
           const toolName = movement.tools.name;
           toolFrequency[toolName] = (toolFrequency[toolName] || 0) + 1;
         }
