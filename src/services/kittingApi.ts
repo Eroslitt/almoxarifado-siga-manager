@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { WorkTemplate, WorkTemplateItem, BatchCheckout, BatchCheckoutItem, KittingSuggestion, WorkTemplateWithItems } from '@/types/kitting';
 import { Tool } from '@/types/database';
@@ -176,14 +175,15 @@ class KittingApiService {
             .slice(0, 10)
             .map(([toolId, frequency]) => {
               const movement = movements.find((m: any) => m.tool_id === toolId);
+              const tool = movement?.tools;
               return {
                 toolId,
-                toolName: movement?.tools?.name || 'Ferramenta',
+                toolName: tool?.name || 'Ferramenta',
                 priority: 'recommended' as const,
                 confidence: Math.min((frequency as number) / 10, 0.8),
                 reason: `Usado ${frequency} vezes recentemente`,
-                available: movement?.tools?.status === 'available',
-                location: movement?.tools?.location || ''
+                available: tool?.status === 'available',
+                location: tool?.location || ''
               };
             });
         }
@@ -346,3 +346,5 @@ class KittingApiService {
 }
 
 export const kittingApi = new KittingApiService();
+
+}
