@@ -15,67 +15,99 @@ interface AnalyticsData {
   locationUtilization: Array<{ code: string; utilization: number; capacity: number }>;
   stockTrends: Array<{ date: string; value: number; change: number }>;
   abcDistribution: { A: number; B: number; C: number };
+  insights: string[];
 }
 
 class MasterDataAnalyticsService {
+  private cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private cacheTimeout = 5 * 60 * 1000; // 5 minutes
+
   async getComprehensiveAnalytics(): Promise<AnalyticsData> {
+    const cacheKey = 'comprehensive-analytics';
+    const cached = this.getCachedData(cacheKey);
+    if (cached) return cached;
+
     try {
       if (isDemoMode) {
-        return this.getDemoAnalytics();
+        const demoData = this.getDemoAnalytics();
+        this.setCachedData(cacheKey, demoData);
+        return demoData;
       }
 
-      const [
-        skusResult,
-        suppliersResult,
-        locationsResult,
-        categoriesResult,
-        lowStockItems,
-        movementsResult,
-        topCategories,
-        supplierStats,
-        locationStats,
-        stockTrends,
-        abcStats
-      ] = await Promise.allSettled([
-        this.getTotalSKUs(),
-        this.getActiveSuppliers(),
-        this.getTotalLocations(),
-        this.getCategoriesCount(),
-        this.getLowStockItems(),
-        this.getRecentMovements(),
-        this.getTopCategories(),
-        this.getSupplierPerformance(),
-        this.getLocationUtilization(),
-        this.getStockTrends(),
-        this.getABCDistribution()
+      // Execute all queries with graceful error handling
+      const results = await Promise.allSettled([
+        this.safeQuery(() => this.getTotalSKUs()),
+        this.safeQuery(() => this.getActiveSuppliers()),
+        this.safeQuery(() => this.getTotalLocations()),
+        this.safeQuery(() => this.getCategoriesCount()),
+        this.safeQuery(() => this.getLowStockItems()),
+        this.safeQuery(() => this.getRecentMovements()),
+        this.safeQuery(() => this.getTopCategories()),
+        this.safeQuery(() => this.getSupplierPerformance()),
+        this.safeQuery(() => this.getLocationUtilization()),
+        this.safeQuery(() => this.getStockTrends()),
+        this.safeQuery(() => this.getABCDistribution())
       ]);
 
-      const getValue = (result: PromiseSettledResult<any>, defaultValue: any) => {
-        return result.status === 'fulfilled' ? result.value : defaultValue;
-      };
+      const [
+        totalSKUs, activeSuppliers, totalLocations, categories,
+        lowStockItems, recentMovements, topCategories, supplierStats,
+        locationStats, stockTrends, abcStats
+      ] = results.map(result => result.status === 'fulfilled' ? result.value : this.getDefaultValue(result));
 
-      const totalItems = getValue(skusResult, 0) + getValue(suppliersResult, 0) + getValue(locationsResult, 0);
-      const movements = getValue(movementsResult, 0);
-      const utilizationRate = totalItems > 0 ? (movements / totalItems) * 100 : 0;
+      const totalItems = totalSKUs + activeSuppliers + totalLocations;
+      const utilizationRate = totalItems > 0 ? Math.min((recentMovements / totalItems) * 100, 100) : 0;
 
-      return {
-        totalSKUs: getValue(skusResult, 0),
-        activeSuppliers: getValue(suppliersResult, 0),
-        totalLocations: getValue(locationsResult, 0),
-        lowStockItems: Array.isArray(getValue(lowStockItems, [])) ? getValue(lowStockItems, []).length : 0,
-        categories: getValue(categoriesResult, 0),
-        recentMovements: movements,
+      const analyticsData: AnalyticsData = {
+        totalSKUs: totalSKUs || 0,
+        activeSuppliers: activeSuppliers || 0,
+        totalLocations: totalLocations || 0,
+        lowStockItems: Array.isArray(lowStockItems) ? lowStockItems.length : 0,
+        categories: categories || 0,
+        recentMovements: recentMovements || 0,
         utilizationRate,
-        topCategories: getValue(topCategories, []),
-        supplierPerformance: getValue(supplierStats, []),
-        locationUtilization: getValue(locationStats, []),
-        stockTrends: getValue(stockTrends, []),
-        abcDistribution: getValue(abcStats, { A: 0, B: 0, C: 0 })
+        topCategories: Array.isArray(topCategories) ? topCategories : [],
+        supplierPerformance: Array.isArray(supplierStats) ? supplierStats : [],
+        locationUtilization: Array.isArray(locationStats) ? locationStats : [],
+        stockTrends: Array.isArray(stockTrends) ? stockTrends : [],
+        abcDistribution: abcStats || { A: 0, B: 0, C: 0 },
+        insights: await this.generateInsights()
       };
+
+      this.setCachedData(cacheKey, analyticsData);
+      return analyticsData;
     } catch (error) {
-      console.error('Erro ao carregar analytics:', error);
-      return this.getDemoAnalytics();
+      console.error('Error loading analytics, using demo data:', error);
+      const demoData = this.getDemoAnalytics();
+      this.setCachedData(cacheKey, demoData);
+      return demoData;
     }
+  }
+
+  private async safeQuery<T>(queryFn: () => Promise<T>): Promise<T> {
+    try {
+      return await queryFn();
+    } catch (error) {
+      console.warn('Query failed, using fallback:', error);
+      throw error;
+    }
+  }
+
+  private getDefaultValue(result: PromiseRejectedResult): any {
+    console.warn('Using default value for failed query:', result.reason);
+    return 0;
+  }
+
+  private getCachedData(key: string): any | null {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      return cached.data;
+    }
+    return null;
+  }
+
+  private setCachedData(key: string, data: any): void {
+    this.cache.set(key, { data, timestamp: Date.now() });
   }
 
   private getDemoAnalytics(): AnalyticsData {
@@ -109,7 +141,12 @@ class MasterDataAnalyticsService {
         { date: '2024-01-03', value: 980, change: -70 },
         { date: '2024-01-04', value: 1120, change: 140 }
       ],
-      abcDistribution: { A: 245, B: 1234, C: 1368 }
+      abcDistribution: { A: 245, B: 1234, C: 1368 },
+      insights: [
+        '✅ Sistema funcionando normalmente com dados de demonstração',
+        '📊 Analytics baseados em dados simulados para desenvolvimento',
+        '🔧 Configure a integração com Supabase para dados reais'
+      ]
     };
   }
 
@@ -118,7 +155,12 @@ class MasterDataAnalyticsService {
       .from('skus')
       .select('*', { count: 'exact', head: true });
     
-    if (error) throw error;
+    if (error) {
+      if (error.message.includes('relation "skus" does not exist')) {
+        return 0;
+      }
+      throw error;
+    }
     return count || 0;
   }
 
@@ -128,7 +170,12 @@ class MasterDataAnalyticsService {
       .select('*', { count: 'exact', head: true })
       .eq('status', 'active');
     
-    if (error) throw error;
+    if (error) {
+      if (error.message.includes('relation "suppliers" does not exist')) {
+        return 0;
+      }
+      throw error;
+    }
     return count || 0;
   }
 
@@ -137,7 +184,12 @@ class MasterDataAnalyticsService {
       .from('storage_locations')
       .select('*', { count: 'exact', head: true });
     
-    if (error) throw error;
+    if (error) {
+      if (error.message.includes('relation "storage_locations" does not exist')) {
+        return 0;
+      }
+      throw error;
+    }
     return count || 0;
   }
 
@@ -146,7 +198,12 @@ class MasterDataAnalyticsService {
       .from('categories')
       .select('*', { count: 'exact', head: true });
     
-    if (error) throw error;
+    if (error) {
+      if (error.message.includes('relation "categories" does not exist')) {
+        return 0;
+      }
+      throw error;
+    }
     return count || 0;
   }
 
@@ -167,7 +224,12 @@ class MasterDataAnalyticsService {
       .select('*', { count: 'exact', head: true })
       .gte('created_at', twentyFourHoursAgo.toISOString());
     
-    if (error) throw error;
+    if (error) {
+      if (error.message.includes('relation "sku_movements" does not exist')) {
+        return 0;
+      }
+      throw error;
+    }
     return count || 0;
   }
 
@@ -179,14 +241,21 @@ class MasterDataAnalyticsService {
         categories!category_id(name)
       `);
 
-    if (error || !data) return [];
+    if (error) {
+      if (error.message.includes('relation') && error.message.includes('does not exist')) {
+        return [];
+      }
+      throw error;
+    }
+
+    if (!data) return [];
 
     const categoryCount: Record<string, number> = {};
     const total = data.length;
 
     data.forEach(item => {
       if (item.categories) {
-        const categoryName = (item.categories as any).name;
+        const categoryName = (item.categories as any).name || 'Sem Categoria';
         categoryCount[categoryName] = (categoryCount[categoryName] || 0) + 1;
       }
     });
@@ -195,7 +264,7 @@ class MasterDataAnalyticsService {
       .map(([name, count]) => ({
         name,
         count,
-        percentage: (count / total) * 100
+        percentage: total > 0 ? (count / total) * 100 : 0
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
@@ -210,50 +279,66 @@ class MasterDataAnalyticsService {
       `)
       .eq('status', 'active');
 
-    if (error || !data) return [];
+    if (error) {
+      if (error.message.includes('relation') && error.message.includes('does not exist')) {
+        return [];
+      }
+      throw error;
+    }
+
+    if (!data) return [];
 
     return data.map(supplier => ({
       name: supplier.company_name,
       activeSKUs: (supplier.skus as any[])?.length || 0,
-      rating: Math.random() * 2 + 3
+      rating: Math.round((Math.random() * 2 + 3) * 10) / 10 // Simulated rating between 3.0-5.0
     })).sort((a, b) => b.activeSKUs - a.activeSKUs).slice(0, 5);
   }
 
   private async getLocationUtilization(): Promise<Array<{ code: string; utilization: number; capacity: number }>> {
-    const { data: locations, error: locError } = await supabase
-      .from('storage_locations')
-      .select('code, max_capacity');
+    try {
+      const [locationsResult, stockLevelsResult] = await Promise.all([
+        supabase.from('storage_locations').select('code, max_capacity'),
+        supabase.from('stock_levels').select(`
+          location_id,
+          current_quantity,
+          storage_locations!location_id(code, max_capacity)
+        `)
+      ]);
 
-    const { data: stockLevels, error: stockError } = await supabase
-      .from('stock_levels')
-      .select(`
-        location_id,
-        current_quantity,
-        storage_locations!location_id(code, max_capacity)
-      `);
-
-    if (locError || stockError || !locations || !stockLevels) return [];
-
-    const utilizationMap: Record<string, { used: number; capacity: number }> = {};
-
-    stockLevels.forEach(level => {
-      const location = level.storage_locations as any;
-      if (location) {
-        const code = location.code;
-        if (!utilizationMap[code]) {
-          utilizationMap[code] = { used: 0, capacity: location.max_capacity || 100 };
-        }
-        utilizationMap[code].used += level.current_quantity;
+      if (locationsResult.error || stockLevelsResult.error) {
+        return [];
       }
-    });
 
-    return Object.entries(utilizationMap)
-      .map(([code, data]) => ({
-        code,
-        utilization: (data.used / data.capacity) * 100,
-        capacity: data.capacity
-      }))
-      .sort((a, b) => b.utilization - a.utilization);
+      const { data: locations } = locationsResult;
+      const { data: stockLevels } = stockLevelsResult;
+
+      if (!locations || !stockLevels) return [];
+
+      const utilizationMap: Record<string, { used: number; capacity: number }> = {};
+
+      stockLevels.forEach(level => {
+        const location = level.storage_locations as any;
+        if (location) {
+          const code = location.code;
+          if (!utilizationMap[code]) {
+            utilizationMap[code] = { used: 0, capacity: location.max_capacity || 100 };
+          }
+          utilizationMap[code].used += level.current_quantity;
+        }
+      });
+
+      return Object.entries(utilizationMap)
+        .map(([code, data]) => ({
+          code,
+          utilization: data.capacity > 0 ? Math.min((data.used / data.capacity) * 100, 100) : 0,
+          capacity: data.capacity
+        }))
+        .sort((a, b) => b.utilization - a.utilization)
+        .slice(0, 10);
+    } catch (error) {
+      return [];
+    }
   }
 
   private async getStockTrends(): Promise<Array<{ date: string; value: number; change: number }>> {
@@ -271,16 +356,20 @@ class MasterDataAnalyticsService {
           .gte('created_at', new Date(date.setHours(0, 0, 0, 0)).toISOString())
           .lt('created_at', new Date(date.setHours(23, 59, 59, 999)).toISOString());
 
-        if (error) throw error;
+        if (error && !error.message.includes('relation') && !error.message.includes('does not exist')) {
+          throw error;
+        }
 
         const totalValue = data?.reduce((sum, movement) => {
           return sum + (movement.movement_type === 'in' ? movement.quantity : -movement.quantity);
         }, 0) || 0;
 
+        const previousValue = trends.length > 0 ? trends[trends.length - 1].value : 0;
+        
         trends.push({
           date: date.toISOString().split('T')[0],
-          value: totalValue,
-          change: i === days - 1 ? 0 : totalValue - (trends[trends.length - 1]?.value || 0)
+          value: Math.abs(totalValue),
+          change: totalValue - previousValue
         });
       } catch (error) {
         trends.push({
@@ -299,11 +388,18 @@ class MasterDataAnalyticsService {
       .from('skus')
       .select('abc_classification');
 
-    if (error || !data) return { A: 0, B: 0, C: 0 };
+    if (error) {
+      if (error.message.includes('relation "skus" does not exist')) {
+        return { A: 0, B: 0, C: 0 };
+      }
+      throw error;
+    }
+
+    if (!data) return { A: 0, B: 0, C: 0 };
 
     const distribution = { A: 0, B: 0, C: 0 };
     data.forEach(sku => {
-      if (sku.abc_classification) {
+      if (sku.abc_classification && ['A', 'B', 'C'].includes(sku.abc_classification)) {
         distribution[sku.abc_classification as 'A' | 'B' | 'C']++;
       }
     });
@@ -313,6 +409,14 @@ class MasterDataAnalyticsService {
 
   async generateInsights(): Promise<string[]> {
     try {
+      if (isDemoMode) {
+        return [
+          '✅ Sistema funcionando com dados de demonstração',
+          '📊 Analytics baseados em dados simulados para desenvolvimento',
+          '🔧 Configure a integração com Supabase para dados reais'
+        ];
+      }
+
       const analytics = await this.getComprehensiveAnalytics();
       const insights: string[] = [];
 
@@ -322,6 +426,8 @@ class MasterDataAnalyticsService {
 
       if (analytics.utilizationRate < 50) {
         insights.push(`📊 Taxa de utilização baixa (${analytics.utilizationRate.toFixed(1)}%) - considere otimizar processos`);
+      } else if (analytics.utilizationRate > 90) {
+        insights.push(`🚀 Alta taxa de utilização (${analytics.utilizationRate.toFixed(1)}%) - sistema muito ativo`);
       }
 
       const { A, B, C } = analytics.abcDistribution;
@@ -335,6 +441,12 @@ class MasterDataAnalyticsService {
 
       if (analytics.recentMovements === 0) {
         insights.push(`🔴 Nenhuma movimentação nas últimas 24h - sistema pode estar subutilizado`);
+      } else if (analytics.recentMovements > 100) {
+        insights.push(`✅ ${analytics.recentMovements} movimentações nas últimas 24h - sistema ativo`);
+      }
+
+      if (analytics.totalSKUs > 1000) {
+        insights.push(`📦 Base ampla de ${analytics.totalSKUs} SKUs - considere análise de duplicatas`);
       }
 
       if (insights.length === 0) {
@@ -346,6 +458,18 @@ class MasterDataAnalyticsService {
       console.error('Erro ao gerar insights:', error);
       return ['⚠️ Erro ao gerar insights - verifique a conexão com o banco de dados'];
     }
+  }
+
+  // Cache management
+  clearCache(): void {
+    this.cache.clear();
+  }
+
+  getCacheStats(): { size: number; keys: string[] } {
+    return {
+      size: this.cache.size,
+      keys: Array.from(this.cache.keys())
+    };
   }
 }
 
