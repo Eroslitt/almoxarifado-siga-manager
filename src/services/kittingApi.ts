@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Tool, User, ToolMovement } from '@/types/database';
 import { KittingSuggestion, WorkTemplateWithItems, BatchCheckout } from '@/types/kitting';
@@ -411,7 +410,7 @@ class KittingApiService {
         .from('tool_movements')
         .select(`
           tool_id,
-          tool:tools!inner(name, status, location)
+          tool:tools(name, status, location)
         `)
         .eq('user_id', userId)
         .eq('action', 'checkout')
@@ -435,8 +434,10 @@ class KittingApiService {
       // Analyze patterns
       const toolFrequency: Record<string, number> = {};
       recentMovements.forEach(movement => {
-        if (movement.tool && movement.tool.name) {
-          const toolName = movement.tool.name;
+        // Handle both single object and array cases from Supabase
+        const tool = Array.isArray(movement.tool) ? movement.tool[0] : movement.tool;
+        if (tool && tool.name) {
+          const toolName = tool.name;
           toolFrequency[toolName] = (toolFrequency[toolName] || 0) + 1;
         }
       });
@@ -447,16 +448,20 @@ class KittingApiService {
         .slice(0, 3);
 
       mostUsed.forEach(([toolName], index) => {
-        const movement = recentMovements.find(m => m.tool?.name === toolName);
+        const movement = recentMovements.find(m => {
+          const tool = Array.isArray(m.tool) ? m.tool[0] : m.tool;
+          return tool?.name === toolName;
+        });
         if (movement && movement.tool) {
+          const tool = Array.isArray(movement.tool) ? movement.tool[0] : movement.tool;
           suggestions.push({
             toolId: movement.tool_id,
-            toolName: movement.tool.name,
+            toolName: tool.name,
             priority: index === 0 ? 'essential' : 'recommended',
             confidence: 0.9 - (index * 0.1),
             reason: 'Ferramenta frequentemente usada por você',
-            available: movement.tool.status === 'available',
-            location: movement.tool.location || 'N/A'
+            available: tool.status === 'available',
+            location: tool.location || 'N/A'
           });
         }
       });
@@ -489,10 +494,11 @@ class KittingApiService {
     const dailyUsage: Record<string, string[]> = {};
     
     movements.forEach(movement => {
-      if (movement.tool) {
+      const tool = Array.isArray(movement.tool) ? movement.tool[0] : movement.tool;
+      if (tool) {
         const date = new Date(movement.timestamp).toDateString();
         if (!dailyUsage[date]) dailyUsage[date] = [];
-        dailyUsage[date].push(movement.tool.name);
+        dailyUsage[date].push(tool.name);
       }
     });
 
