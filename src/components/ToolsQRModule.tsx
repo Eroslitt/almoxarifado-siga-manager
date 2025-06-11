@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToolsHeader } from '@/components/tools/ToolsHeader';
@@ -5,8 +6,10 @@ import { ToolsStats } from '@/components/tools/ToolsStats';
 import { ToolsOverview } from '@/components/tools/ToolsOverview';
 import { ToolsManagement } from '@/components/tools/ToolsManagement';
 import { QRScanner } from '@/components/tools/QRScanner';
+import { EnhancedQRScanner } from '@/components/tools/EnhancedQRScanner';
 import { ToolsReports } from '@/components/tools/ToolsReports';
 import { RecentMovements } from '@/components/tools/RecentMovements';
+import { RealTimeMovements } from '@/components/tools/RealTimeMovements';
 import { QRCodeGenerator } from '@/components/tools/QRCodeGenerator';
 import { LabelPrinter } from '@/components/tools/LabelPrinter';
 import { AlertsManagement } from '@/components/tools/AlertsManagement';
@@ -101,11 +104,12 @@ export const ToolsQRModule = () => {
       <ToolsStats stats={toolsStats} />
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-11">
+        <TabsList className="grid w-full grid-cols-12">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="management">Gestão</TabsTrigger>
           <TabsTrigger value="scanner">QR Scanner</TabsTrigger>
-          <TabsTrigger value="kitting">Kitting Dinâmico</TabsTrigger>
+          <TabsTrigger value="enhanced-scanner">Scanner Inteligente</TabsTrigger>
+          <TabsTrigger value="kitting">Kitting</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="qr-generator">Gerar QR</TabsTrigger>
           <TabsTrigger value="labels">Etiquetas</TabsTrigger>
@@ -116,7 +120,10 @@ export const ToolsQRModule = () => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <ToolsOverview />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ToolsOverview />
+            <RealTimeMovements />
+          </div>
         </TabsContent>
 
         <TabsContent value="management" className="space-y-4">
@@ -125,6 +132,10 @@ export const ToolsQRModule = () => {
 
         <TabsContent value="scanner" className="space-y-4">
           <QRScanner />
+        </TabsContent>
+
+        <TabsContent value="enhanced-scanner" className="space-y-4">
+          <EnhancedQRScanner />
         </TabsContent>
 
         <TabsContent value="kitting" className="space-y-4">
@@ -162,8 +173,6 @@ export const ToolsQRModule = () => {
           <ToolsReports />
         </TabsContent>
       </Tabs>
-
-      <RecentMovements movements={recentMovements} />
     </div>
   );
 };
