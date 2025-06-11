@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -7,7 +6,9 @@ import {
   AlertTriangle, 
   Clock,
   Users,
-  Truck
+  Truck,
+  QrCode,
+  Wrench
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
@@ -58,6 +59,19 @@ export const Dashboard = () => {
 
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ferramentas QR</CardTitle>
+            <QrCode className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">145</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-blue-600">35</span> em uso agora
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Acuracidade ISA</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
@@ -79,15 +93,84 @@ export const Dashboard = () => {
             </p>
           </CardContent>
         </Card>
+      </div>
 
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ocupação</CardTitle>
-            <Truck className="h-4 w-4 text-purple-600" />
+      {/* Status SGF-QR */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <QrCode className="h-5 w-5 text-purple-600" />
+              <span>Status Ferramentas QR</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">76%</div>
-            <Progress value={76} className="mt-2" />
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-green-600">Disponíveis</span>
+                <span className="font-semibold">98</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-blue-600">Em Uso</span>
+                <span className="font-semibold">35</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-red-600">Manutenção</span>
+                <span className="font-semibold">12</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              <span>Operadores Ativos</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Recebimento</span>
+                <span className="font-semibold">3/3</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Separação</span>
+                <span className="font-semibold">5/6</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Expedição</span>
+                <span className="font-semibold">2/2</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Wrench className="h-5 w-5 text-orange-600" />
+              <span>Performance QR</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Taxa de Utilização</span>
+                  <span>73%</span>
+                </div>
+                <Progress value={73} className="h-2" />
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Tempo Médio de Uso</span>
+                  <span>4.2h</span>
+                </div>
+                <Progress value={65} className="h-2" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -148,31 +231,6 @@ export const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Users className="h-5 w-5 text-blue-600" />
-              <span>Operadores Ativos</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Recebimento</span>
-                <span className="font-semibold">3/3</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Separação</span>
-                <span className="font-semibold">5/6</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Expedição</span>
-                <span className="font-semibold">2/2</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle>Pedidos Hoje</CardTitle>
           </CardHeader>
           <CardContent>
@@ -212,6 +270,30 @@ export const Dashboard = () => {
                   <span>6.8x/ano</span>
                 </div>
                 <Progress value={68} className="h-2" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Ocupação</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Almoxarifado</span>
+                  <span>76%</span>
+                </div>
+                <Progress value={76} className="h-2" />
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Ferramentaria</span>
+                  <span>84%</span>
+                </div>
+                <Progress value={84} className="h-2" />
               </div>
             </div>
           </CardContent>

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { Dashboard } from '@/components/Dashboard';
 import { StockModule } from '@/components/StockModule';
+import { ToolsQRModule } from '@/components/ToolsQRModule';
 import { ReceivingModule } from '@/components/ReceivingModule';
 import { ShippingModule } from '@/components/ShippingModule';
 import { ReportsModule } from '@/components/ReportsModule';
@@ -16,6 +17,8 @@ const Index = () => {
         return <Dashboard />;
       case 'stock':
         return <StockModule />;
+      case 'tools-qr':
+        return <ToolsQRModule />;
       case 'receiving':
         return <ReceivingModule />;
       case 'shipping':

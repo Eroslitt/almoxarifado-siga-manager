@@ -7,7 +7,8 @@ import {
   ShoppingCart, 
   FileText,
   Settings,
-  Home
+  Home,
+  QrCode
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -19,6 +20,7 @@ export const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'stock', label: 'Gestão de Estoque', icon: Package },
+    { id: 'tools-qr', label: 'Ferramentas QR', icon: QrCode },
     { id: 'receiving', label: 'Recebimento', icon: TruckIcon },
     { id: 'shipping', label: 'Expedição', icon: ShoppingCart },
     { id: 'reports', label: 'Relatórios', icon: BarChart3 },
