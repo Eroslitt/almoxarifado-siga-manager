@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ResponsiveTabs, ResponsiveTabsContent, ResponsiveTabsList, ResponsiveTabsTrigger } from '@/components/ui/responsive-tabs';
 import { ToolsHeader } from '@/components/tools/ToolsHeader';
 import { ToolsStats } from '@/components/tools/ToolsStats';
 import { ToolsOverview } from '@/components/tools/ToolsOverview';
@@ -136,7 +136,7 @@ export const ToolsQRModule = () => {
 
   if (!isInitialized) {
     return (
-      <div className="p-6 flex items-center justify-center h-64">
+      <div className="p-4 lg:p-6 flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Inicializando SGF-QR Avançado...</p>
@@ -147,106 +147,81 @@ export const ToolsQRModule = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 min-h-screen">
       <ToolsHeader />
 
       <ToolsStats stats={toolsStats} />
 
-      <Tabs defaultValue="blueprint-scanner" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-12">
-          <TabsTrigger value="blueprint-scanner">SGF-QR v2.0</TabsTrigger>
-          <TabsTrigger value="blueprint-panel">Painel Gestor</TabsTrigger>
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="management">Gestão</TabsTrigger>
-          <TabsTrigger value="scanner">QR Scanner</TabsTrigger>
-          <TabsTrigger value="smart-scanner">Smart Scanner</TabsTrigger>
-          <TabsTrigger value="dashboard">Dashboard Tempo Real</TabsTrigger>
-          <TabsTrigger value="notifications">Central Notificações</TabsTrigger>
-          <TabsTrigger value="kitting">Kitting</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="qr-generator">Gerar QR</TabsTrigger>
-          <TabsTrigger value="labels">Etiquetas</TabsTrigger>
-          <TabsTrigger value="alerts">Alertas</TabsTrigger>
-          <TabsTrigger value="reservations">Reservas</TabsTrigger>
-          <TabsTrigger value="maintenance">Manutenção</TabsTrigger>
-          <TabsTrigger value="traceability">Rastreabilidade</TabsTrigger>
-          <TabsTrigger value="reports">Relatórios</TabsTrigger>
-        </TabsList>
+      <ResponsiveTabs defaultValue="blueprint-scanner" className="space-y-4">
+        <ResponsiveTabsList>
+          <ResponsiveTabsTrigger value="blueprint-scanner">SGF-QR v2.0</ResponsiveTabsTrigger>
+          <ResponsiveTabsTrigger value="blueprint-panel">Painel Gestor</ResponsiveTabsTrigger>
+          <ResponsiveTabsTrigger value="overview">Visão Geral</ResponsiveTabsTrigger>
+          <ResponsiveTabsTrigger value="management">Gestão</ResponsiveTabsTrigger>
+          <ResponsiveTabsTrigger value="scanner">QR Scanner</ResponsiveTabsTrigger>
+          <ResponsiveTabsTrigger value="smart-scanner">Smart Scanner</ResponsiveTabsTrigger>
+          <ResponsiveTabsTrigger value="dashboard">Dashboard</ResponsiveTabsTrigger>
+          <ResponsiveTabsTrigger value="notifications">Notificações</ResponsiveTabsTrigger>
+          <ResponsiveTabsTrigger value="kitting">Kitting</ResponsiveTabsTrigger>
+          <ResponsiveTabsTrigger value="templates">Templates</ResponsiveTabsTrigger>
+          <ResponsiveTabsTrigger value="qr-generator">Gerar QR</ResponsiveTabsTrigger>
+          <ResponsiveTabsTrigger value="labels">Etiquetas</ResponsiveTabsTrigger>
+        </ResponsiveTabsList>
 
-        <TabsContent value="blueprint-scanner" className="space-y-4">
+        <ResponsiveTabsContent value="blueprint-scanner" className="space-y-4">
           <BlueprintQRScanner />
-        </TabsContent>
+        </ResponsiveTabsContent>
 
-        <TabsContent value="blueprint-panel" className="space-y-4">
+        <ResponsiveTabsContent value="blueprint-panel" className="space-y-4">
           <BlueprintLivePanel />
-        </TabsContent>
+        </ResponsiveTabsContent>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ResponsiveTabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
             <ToolsOverview />
             <RealTimeMovements />
           </div>
-        </TabsContent>
+        </ResponsiveTabsContent>
 
-        <TabsContent value="management" className="space-y-4">
+        <ResponsiveTabsContent value="management" className="space-y-4">
           <ToolsManagement />
-        </TabsContent>
+        </ResponsiveTabsContent>
 
-        <TabsContent value="scanner" className="space-y-4">
+        <ResponsiveTabsContent value="scanner" className="space-y-4">
           <QRScanner />
-        </TabsContent>
+        </ResponsiveTabsContent>
 
-        <TabsContent value="smart-scanner" className="space-y-4">
+        <ResponsiveTabsContent value="smart-scanner" className="space-y-4">
           <SmartQRScanner />
-        </TabsContent>
+        </ResponsiveTabsContent>
 
-        <TabsContent value="dashboard" className="space-y-4">
+        <ResponsiveTabsContent value="dashboard" className="space-y-4">
           <RealTimeMovementsDashboard />
-        </TabsContent>
+        </ResponsiveTabsContent>
 
-        <TabsContent value="notifications" className="space-y-4">
+        <ResponsiveTabsContent value="notifications" className="space-y-4">
           <NotificationCenter />
-        </TabsContent>
+        </ResponsiveTabsContent>
 
-        <TabsContent value="kitting" className="space-y-4">
+        <ResponsiveTabsContent value="kitting" className="space-y-4">
           <KittingCheckout />
-        </TabsContent>
+        </ResponsiveTabsContent>
 
-        <TabsContent value="templates" className="space-y-4">
+        <ResponsiveTabsContent value="templates" className="space-y-4">
           <WorkTemplateManager />
-        </TabsContent>
+        </ResponsiveTabsContent>
 
-        <TabsContent value="qr-generator" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ResponsiveTabsContent value="qr-generator" className="space-y-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
             <QRCodeGenerator />
             <QRCodeGenerator tool={mockTools[0]} />
           </div>
-        </TabsContent>
+        </ResponsiveTabsContent>
 
-        <TabsContent value="labels" className="space-y-4">
+        <ResponsiveTabsContent value="labels" className="space-y-4">
           <LabelPrinter tools={mockTools} />
-        </TabsContent>
-
-        <TabsContent value="alerts" className="space-y-4">
-          <AlertsManagement />
-        </TabsContent>
-
-        <TabsContent value="reservations" className="space-y-4">
-          <ReservationsManagement />
-        </TabsContent>
-
-        <TabsContent value="maintenance" className="space-y-4">
-          <MaintenanceManagement />
-        </TabsContent>
-
-        <TabsContent value="traceability" className="space-y-4">
-          <TraceabilityReports />
-        </TabsContent>
-
-        <TabsContent value="reports" className="space-y-4">
-          <ToolsReports />
-        </TabsContent>
-      </Tabs>
+        </ResponsiveTabsContent>
+      </ResponsiveTabs>
     </div>
   );
 };

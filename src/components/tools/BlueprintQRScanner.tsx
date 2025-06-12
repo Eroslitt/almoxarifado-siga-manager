@@ -19,7 +19,6 @@ import {
   BarChart3
 } from 'lucide-react';
 
-// SGF-QR v2.0 - Interface Ultra-Simplificada do Colaborador
 export const BlueprintQRScanner = () => {
   const [scannedToolId, setScannedToolId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,19 +38,16 @@ export const BlueprintQRScanner = () => {
     try {
       console.log('📱 QR Code escaneado (Blueprint v2.0):', decodedText);
       
-      // Extrair ID da ferramenta do QR Code
       let toolId: string;
       try {
         const qrData = JSON.parse(decodedText);
         toolId = qrData.toolId || qrData.id;
       } catch {
-        // QR Code simples contendo apenas o ID
         toolId = decodedText;
       }
 
       setScannedToolId(toolId);
 
-      // Processar operação automática conforme blueprint
       const result = await blueprintToolsService.processarOperacaoAutomatica({
         colaborador_id: user!.id,
         ferramenta_id: toolId
@@ -60,7 +56,6 @@ export const BlueprintQRScanner = () => {
       setLastOperation(result);
 
       if (result.success) {
-        // Auto-reset para retiradas após 3 segundos
         if (result.data?.tipo_operacao === 'RETIRADA') {
           setTimeout(resetForm, 3000);
         }
@@ -85,7 +80,6 @@ export const BlueprintQRScanner = () => {
     setLoading(true);
 
     try {
-      // Processar devolução com observação de avaria
       const result = await blueprintToolsService.processarDevolucao({
         colaborador_id: user!.id,
         ferramenta_id: scannedToolId
@@ -138,7 +132,6 @@ export const BlueprintQRScanner = () => {
   };
 
   const handleSimulateOperation = () => {
-    // Simular scan para demonstração
     handleQRCodeScanned('FRM-001274');
   };
 
@@ -152,7 +145,7 @@ export const BlueprintQRScanner = () => {
 
   if (!user) {
     return (
-      <Card>
+      <Card className="mx-auto max-w-md">
         <CardHeader>
           <CardTitle>Acesso Negado</CardTitle>
         </CardHeader>
@@ -164,70 +157,70 @@ export const BlueprintQRScanner = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header do Sistema */}
+    <div className="space-y-4 lg:space-y-6 max-w-4xl mx-auto">
+      {/* Header do Sistema - Responsivo */}
       <Card className="border-blue-500 bg-blue-50">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between text-blue-800">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex flex-col lg:flex-row lg:items-center lg:justify-between text-blue-800 space-y-2 lg:space-y-0">
             <div className="flex items-center space-x-2">
-              <QrCode className="h-6 w-6" />
-              <span>SGF-QR v2.0 - Sistema de Controle de Ativos</span>
+              <QrCode className="h-5 w-5 lg:h-6 lg:w-6" />
+              <span className="text-lg lg:text-xl">SGF-QR v2.0</span>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={togglePerformanceStats}
-              className="text-blue-700 border-blue-300"
+              className="text-blue-700 border-blue-300 self-start lg:self-auto"
             >
               <BarChart3 className="h-4 w-4 mr-1" />
-              Performance
+              <span className="hidden sm:inline">Performance</span>
             </Button>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+        <CardContent className="pt-0">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+            <div className="flex items-center space-x-3">
+              <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <User className="h-5 w-5 text-blue-600" />
               </div>
-              <div>
-                <h3 className="font-semibold text-blue-900">{user.name}</h3>
-                <p className="text-sm text-blue-700">ID: {user.id} • {user.department}</p>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-blue-900 truncate">{user.name}</h3>
+                <p className="text-sm text-blue-700 truncate">ID: {user.id} • {user.department}</p>
               </div>
             </div>
-            <Badge className="bg-green-100 text-green-800">Conectado</Badge>
+            <Badge className="bg-green-100 text-green-800 self-start sm:self-auto">Conectado</Badge>
           </div>
         </CardContent>
       </Card>
 
-      {/* Estatísticas de Performance (opcional) */}
+      {/* Estatísticas de Performance - Mobile Friendly */}
       {showPerformanceStats && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+            <CardTitle className="flex items-center space-x-2 text-lg">
               <BarChart3 className="h-5 w-5" />
               <span>Estatísticas de Performance</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {(() => {
                 const stats = blueprintToolsService.getPerformanceStats();
                 return (
                   <>
-                    <div className="text-center">
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
                       <div className="text-2xl font-bold text-blue-600">
                         {stats.averageResponseTime.toFixed(0)}ms
                       </div>
                       <div className="text-sm text-gray-600">Tempo Médio</div>
                     </div>
-                    <div className="text-center">
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
                       <div className="text-2xl font-bold text-green-600">
                         {stats.successRate.toFixed(1)}%
                       </div>
                       <div className="text-sm text-gray-600">Taxa de Sucesso</div>
                     </div>
-                    <div className="text-center">
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
                       <div className="text-2xl font-bold text-gray-600">
                         {stats.totalOperations}
                       </div>
@@ -241,53 +234,53 @@ export const BlueprintQRScanner = () => {
         </Card>
       )}
 
-      {/* Scanner QR Code */}
+      {/* Scanner QR Code - Full Screen Mobile */}
       {showScanner && (
-        <QRCodeReader
-          isActive={showScanner}
-          onScanSuccess={handleQRCodeScanned}
-          onScanError={handleScanError}
-          onCancel={() => setShowScanner(false)}
-        />
+        <div className="fixed inset-0 z-50 bg-background md:relative md:inset-auto md:z-auto">
+          <QRCodeReader
+            isActive={showScanner}
+            onScanSuccess={handleQRCodeScanned}
+            onScanError={handleScanError}
+            onCancel={() => setShowScanner(false)}
+          />
+        </div>
       )}
 
-      {/* Interface Principal - Ultra Simples */}
+      {/* Interface Principal - Ultra Simples e Responsiva */}
       {!showScanner && !lastOperation && !showConditionForm && (
         <Card>
-          <CardContent className="p-12 text-center">
-            <Camera className="h-24 w-24 text-gray-400 mx-auto mb-6" />
-            <h2 className="text-2xl font-bold mb-4">Escaneie o QR Code da Ferramenta</h2>
-            <p className="text-gray-600 mb-8">
+          <CardContent className="p-8 lg:p-12 text-center">
+            <Camera className="h-16 w-16 lg:h-24 lg:w-24 text-gray-400 mx-auto mb-6" />
+            <h2 className="text-xl lg:text-2xl font-bold mb-4">Escaneie o QR Code da Ferramenta</h2>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
               O sistema detectará automaticamente se é uma retirada ou devolução
             </p>
             
-            <div className="space-y-4">
+            <div className="space-y-4 max-w-sm mx-auto">
               <Button 
                 onClick={startScanning} 
                 size="lg"
-                className="bg-blue-600 hover:bg-blue-700 px-8 py-4 text-lg"
+                className="w-full bg-blue-600 hover:bg-blue-700 py-4 text-lg min-h-[56px]"
                 disabled={loading}
               >
                 <Camera className="h-5 w-5 mr-2" />
                 Ativar Scanner
               </Button>
               
-              <div>
-                <Button 
-                  onClick={handleSimulateOperation}
-                  variant="outline"
-                  className="text-gray-600"
-                >
-                  <QrCode className="h-4 w-4 mr-2" />
-                  Simular Operação (Demo)
-                </Button>
-              </div>
+              <Button 
+                onClick={handleSimulateOperation}
+                variant="outline"
+                className="w-full text-gray-600 min-h-[44px]"
+              >
+                <QrCode className="h-4 w-4 mr-2" />
+                Simular Operação (Demo)
+              </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Confirmação de Operação */}
+      {/* Confirmação de Operação - Responsiva */}
       {lastOperation && !showConditionForm && (
         <BlueprintConfirmation
           operation={lastOperation}
@@ -297,13 +290,13 @@ export const BlueprintQRScanner = () => {
         />
       )}
 
-      {/* Formulário de Condição */}
+      {/* Formulário de Condição - Mobile Friendly */}
       {showConditionForm && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <AlertTriangle className="h-5 w-5 text-red-600" />
-              <span>Reportar Avaria ou Problema</span>
+              <span className="text-lg">Reportar Avaria ou Problema</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -324,13 +317,14 @@ export const BlueprintQRScanner = () => {
                   value={conditionNote}
                   onChange={(e) => setConditionNote(e.target.value)}
                   rows={4}
+                  className="resize-none"
                 />
               </div>
 
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button 
                   onClick={handleConditionReport} 
-                  className="bg-red-600 hover:bg-red-700 flex-1"
+                  className="bg-red-600 hover:bg-red-700 flex-1 min-h-[44px]"
                   disabled={!conditionNote.trim() || loading}
                 >
                   {loading ? (
@@ -338,12 +332,14 @@ export const BlueprintQRScanner = () => {
                   ) : (
                     <AlertTriangle className="h-4 w-4 mr-2" />
                   )}
-                  Confirmar - Enviar para Manutenção
+                  <span className="hidden sm:inline">Confirmar - Enviar para Manutenção</span>
+                  <span className="sm:hidden">Enviar para Manutenção</span>
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => setShowConditionForm(false)}
                   disabled={loading}
+                  className="sm:w-auto min-h-[44px]"
                 >
                   Voltar
                 </Button>
@@ -353,7 +349,7 @@ export const BlueprintQRScanner = () => {
         </Card>
       )}
 
-      {/* Loading State */}
+      {/* Loading State - Responsivo */}
       {loading && (
         <Card>
           <CardContent className="p-8 text-center">
