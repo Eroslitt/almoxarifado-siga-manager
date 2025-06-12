@@ -166,7 +166,8 @@ const createMockClient = () => {
 const realClient = createClient<Database>(supabaseUrl, supabaseAnonKey);
 const mockClient = createMockClient();
 
-export const supabase = isDemo ? mockClient as typeof realClient : realClient;
+// Use type assertion to resolve the TypeScript conversion error
+export const supabase = isDemo ? (mockClient as any) : realClient;
 
 export const isDemoMode = isDemo;
 

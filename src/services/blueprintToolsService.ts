@@ -1,3 +1,4 @@
+
 import { supabase, isDemoMode } from '@/lib/supabase';
 import { BlueprintTool, BlueprintMovement, BlueprintOperationRequest, BlueprintOperationResponse, BlueprintLiveStatus } from '@/types/sgf-blueprint';
 import { blueprintPerformanceService } from './blueprintPerformanceService';
