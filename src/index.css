@@ -171,6 +171,32 @@
   .safe-area-right {
     padding-right: env(safe-area-inset-right);
   }
+
+  /* Mobile-specific optimizations */
+  .mobile-device {
+    /* Better scrolling on mobile */
+    -webkit-overflow-scrolling: touch;
+    
+    /* Prevent zoom on double tap */
+    touch-action: manipulation;
+    
+    /* Optimize rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* PWA optimizations */
+  .pwa-ready {
+    /* Ensure full viewport coverage */
+    min-height: 100vh;
+    min-height: 100dvh;
+    
+    /* Handle safe areas for notched devices */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
 }
 
 @layer utilities {
@@ -205,6 +231,29 @@
   .flex-mobile-center {
     @apply flex flex-col items-center sm:flex-row sm:justify-between;
   }
+
+  /* Performance optimizations */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  .reduce-motion {
+    @apply motion-reduce:transition-none motion-reduce:animate-none;
+  }
+
+  /* Mobile gesture support */
+  .swipe-container {
+    touch-action: pan-x pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Mobile keyboard handling */
+  .keyboard-avoiding {
+    /* Adjust for virtual keyboard */
+    min-height: calc(100vh - env(keyboard-inset-height, 0px));
+  }
 }
 
 /* Media queries for enhanced mobile experience */
@@ -223,6 +272,17 @@
   input, select, textarea {
     font-size: 16px;
   }
+
+  /* Mobile-specific spacing */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Optimize cards for small screens */
+  .card {
+    margin-bottom: 0.75rem;
+  }
 }
 
 /* Landscape orientation optimizations */
@@ -234,11 +294,24 @@
   .landscape-hide {
     @apply hidden;
   }
+
+  /* Optimize for landscape mobile */
+  .mobile-landscape {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
 }
 
 /* High DPI display optimizations */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
   .crisp-edges {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+
+  /* Optimize icons for retina displays */
+  .icon-crisp {
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
   }
@@ -255,5 +328,76 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Network-aware optimizations */
+@media (prefers-reduced-data: reduce) {
+  .data-saver {
+    /* Reduce visual effects on slow connections */
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Dark mode mobile optimizations */
+@media (prefers-color-scheme: dark) {
+  .mobile-device {
+    /* Better contrast for mobile dark mode */
+    color-scheme: dark;
+  }
+}
+
+/* iOS specific optimizations */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  .ios-safe {
+    /* Handle iOS viewport units */
+    min-height: -webkit-fill-available;
+  }
+
+  /* Prevent iOS bounce scroll */
+  .no-bounce {
+    position: fixed;
+    overflow: hidden;
+  }
+
+  /* iOS input styling */
+  input, textarea, select {
+    -webkit-appearance: none;
+    border-radius: 0;
+  }
+}
+
+/* Android specific optimizations */
+@media screen and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) {
+  /* Android Chrome address bar handling */
+  .android-viewport {
+    min-height: 100vh;
+    min-height: calc(100vh - 56px); /* Account for Chrome address bar */
+  }
+}
+
+/* Tablet specific optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .tablet-optimized {
+    /* Optimize for tablet viewing */
+    max-width: 90%;
+    margin: 0 auto;
+  }
+
+  /* Better spacing for tablets */
+  .tablet-spacing {
+    padding: 2rem;
+  }
+}
+
+/* Performance optimizations for older devices */
+@media (max-device-width: 667px) and (-webkit-device-pixel-ratio: 2) {
+  /* iPhone 6/7/8 optimizations */
+  .legacy-device {
+    /* Reduce complex animations */
+    transform: none !important;
+    transition: opacity 0.2s ease !important;
   }
 }
