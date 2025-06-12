@@ -1,17 +1,30 @@
-
 import { supabase, isDemoMode } from '@/lib/supabase';
 import { BlueprintTool, BlueprintMovement, BlueprintOperationRequest, BlueprintOperationResponse, BlueprintLiveStatus } from '@/types/sgf-blueprint';
+import { blueprintPerformanceService } from './blueprintPerformanceService';
+import { blueprintWebSocketService } from './blueprintWebSocketService';
 
-// SGF-QR v2.0 - Serviço Core Conforme Blueprint
+// SGF-QR v2.0 - Serviço Core Conforme Blueprint com Performance Otimizada
 class BlueprintToolsService {
   
-  // PROCESSO DE RETIRADA (Checkout) - Conforme Blueprint
+  // PROCESSO DE RETIRADA (Checkout) - Conforme Blueprint com Métricas
   async processarRetirada(request: BlueprintOperationRequest): Promise<BlueprintOperationResponse> {
+    const perfId = blueprintPerformanceService.startOperation('RETIRADA');
     console.log('🔄 Processando RETIRADA conforme blueprint:', request);
 
     try {
       if (isDemoMode) {
-        return this.mockRetirada(request);
+        const result = this.mockRetirada(request);
+        blueprintPerformanceService.endOperation(perfId, true);
+        
+        // Broadcast da mudança via WebSocket
+        blueprintWebSocketService.broadcastStatusChange({
+          ferramenta_id: request.ferramenta_id,
+          operacao: 'RETIRADA',
+          colaborador_id: request.colaborador_id,
+          timestamp: new Date().toISOString()
+        });
+        
+        return result;
       }
 
       // 1. Verificar status da ferramenta
@@ -96,19 +109,23 @@ class BlueprintToolsService {
         };
       }
 
-      return {
+      const result = {
         success: true,
         message: 'RETIRADA CONFIRMADA',
         data: {
           ferramenta_nome: ferramenta.name,
           colaborador_nome: colaborador?.name || 'Usuário',
           timestamp: this.formatTimestamp(timestamp),
-          tipo_operacao: 'RETIRADA'
+          tipo_operacao: 'RETIRADA' as const
         }
       };
 
+      blueprintPerformanceService.endOperation(perfId, true);
+      return result;
+
     } catch (error) {
       console.error('Erro no processo de retirada:', error);
+      blueprintPerformanceService.endOperation(perfId, false, 'INTERNAL_ERROR');
       return {
         success: false,
         message: 'Erro interno do servidor'
@@ -116,13 +133,25 @@ class BlueprintToolsService {
     }
   }
 
-  // PROCESSO DE DEVOLUÇÃO (Check-in) - Conforme Blueprint
+  // PROCESSO DE DEVOLUÇÃO (Check-in) - Conforme Blueprint com Métricas
   async processarDevolucao(request: BlueprintOperationRequest, observacao?: string): Promise<BlueprintOperationResponse> {
+    const perfId = blueprintPerformanceService.startOperation('DEVOLUÇÃO');
     console.log('🔄 Processando DEVOLUÇÃO conforme blueprint:', request);
 
     try {
       if (isDemoMode) {
-        return this.mockDevolucao(request);
+        const result = this.mockDevolucao(request);
+        blueprintPerformanceService.endOperation(perfId, true);
+        
+        // Broadcast da mudança via WebSocket
+        blueprintWebSocketService.broadcastStatusChange({
+          ferramenta_id: request.ferramenta_id,
+          operacao: 'DEVOLUÇÃO',
+          colaborador_id: request.colaborador_id,
+          timestamp: new Date().toISOString()
+        });
+        
+        return result;
       }
 
       // 1. Verificar status da ferramenta
@@ -203,23 +232,25 @@ class BlueprintToolsService {
         };
       }
 
-      const statusMessage = observacao ? 
-        'DEVOLUÇÃO CONFIRMADA - Ferramenta enviada para manutenção' :
-        'DEVOLUÇÃO CONFIRMADA';
-
-      return {
+      const result = {
         success: true,
-        message: statusMessage,
+        message: observacao ? 
+          'DEVOLUÇÃO CONFIRMADA - Ferramenta enviada para manutenção' :
+          'DEVOLUÇÃO CONFIRMADA',
         data: {
           ferramenta_nome: ferramenta.name,
           colaborador_nome: colaborador?.name || 'Usuário',
           timestamp: this.formatTimestamp(timestamp),
-          tipo_operacao: 'DEVOLUÇÃO'
+          tipo_operacao: 'DEVOLUÇÃO' as const
         }
       };
 
+      blueprintPerformanceService.endOperation(perfId, true);
+      return result;
+
     } catch (error) {
       console.error('Erro no processo de devolução:', error);
+      blueprintPerformanceService.endOperation(perfId, false, 'INTERNAL_ERROR');
       return {
         success: false,
         message: 'Erro interno do servidor'
@@ -229,10 +260,23 @@ class BlueprintToolsService {
 
   // OPERAÇÃO INTELIGENTE - Detecta automaticamente se é retirada ou devolução
   async processarOperacaoAutomatica(request: BlueprintOperationRequest): Promise<BlueprintOperationResponse> {
+    const perfId = blueprintPerformanceService.startOperation('CONSULTA');
     console.log('🤖 Processando operação automática:', request);
 
     try {
-      // Verificar status atual da ferramenta
+      if (isDemoMode) {
+        // Simular lógica de detecção baseada em timestamp
+        const isCheckout = Math.random() > 0.5;
+        blueprintPerformanceService.endOperation(perfId, true);
+        
+        if (isCheckout) {
+          return this.processarRetirada(request);
+        } else {
+          return this.processarDevolucao(request);
+        }
+      }
+
+      // 1. Verificar status atual da ferramenta
       const { data: ferramenta } = await supabase
         .from('tools')
         .select('status, current_user_id')
@@ -262,6 +306,7 @@ class BlueprintToolsService {
 
     } catch (error) {
       console.error('Erro na operação automática:', error);
+      blueprintPerformanceService.endOperation(perfId, false, 'AUTO_DETECTION_ERROR');
       return {
         success: false,
         message: 'Erro interno do servidor'
@@ -269,11 +314,15 @@ class BlueprintToolsService {
     }
   }
 
-  // PAINEL AO VIVO - Conforme Blueprint
+  // PAINEL AO VIVO - Conforme Blueprint com Performance
   async obterStatusAoVivo(): Promise<BlueprintLiveStatus[]> {
+    const perfId = blueprintPerformanceService.startOperation('CONSULTA');
+    
     try {
       if (isDemoMode) {
-        return this.mockStatusAoVivo();
+        const result = this.mockStatusAoVivo();
+        blueprintPerformanceService.endOperation(perfId, true);
+        return result;
       }
 
       const { data: ferramentas } = await supabase
@@ -310,6 +359,7 @@ class BlueprintToolsService {
 
     } catch (error) {
       console.error('Erro ao obter status ao vivo:', error);
+      blueprintPerformanceService.endOperation(perfId, false, 'STATUS_QUERY_ERROR');
       return [];
     }
   }
@@ -399,8 +449,32 @@ class BlueprintToolsService {
         responsavel_atual: null,
         retirada_em: '10/06/2025 às 15:30',
         tempo_posse: null
+      },
+      {
+        ferramenta: 'Furadeira Black & Decker',
+        status: 'EM USO',
+        responsavel_atual: 'Maria Santos',
+        retirada_em: '12/06/2025 às 08:15',
+        tempo_posse: '45min'
+      },
+      {
+        ferramenta: 'Chave de Fenda Philips 6mm',
+        status: 'DISPONÍVEL',
+        responsavel_atual: null,
+        retirada_em: null,
+        tempo_posse: null
       }
     ];
+  }
+
+  // Método para obter estatísticas de performance
+  getPerformanceStats() {
+    return blueprintPerformanceService.getStatistics();
+  }
+
+  // Método para gerar relatório de performance
+  generatePerformanceReport(): string {
+    return blueprintPerformanceService.generatePerformanceReport();
   }
 }
 

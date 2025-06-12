@@ -9,17 +9,17 @@ import { useAuth } from '@/hooks/useAuth';
 import { blueprintToolsService } from '@/services/blueprintToolsService';
 import { BlueprintOperationResponse } from '@/types/sgf-blueprint';
 import { QRCodeReader } from './QRCodeReader';
+import { BlueprintConfirmation } from './BlueprintConfirmation';
 import { 
   QrCode, 
   Camera, 
-  CheckCircle,
   Loader2,
   User,
   AlertTriangle,
-  Clock
+  BarChart3
 } from 'lucide-react';
 
-// SGF-QR v2.0 - Interface do Colaborador Conforme Blueprint
+// SGF-QR v2.0 - Interface Ultra-Simplificada do Colaborador
 export const BlueprintQRScanner = () => {
   const [scannedToolId, setScannedToolId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,6 +27,7 @@ export const BlueprintQRScanner = () => {
   const [lastOperation, setLastOperation] = useState<BlueprintOperationResponse | null>(null);
   const [showConditionForm, setShowConditionForm] = useState(false);
   const [conditionNote, setConditionNote] = useState('');
+  const [showPerformanceStats, setShowPerformanceStats] = useState(false);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -36,7 +37,7 @@ export const BlueprintQRScanner = () => {
     setLoading(true);
 
     try {
-      console.log('📱 QR Code escaneado (Blueprint):', decodedText);
+      console.log('📱 QR Code escaneado (Blueprint v2.0):', decodedText);
       
       // Extrair ID da ferramenta do QR Code
       let toolId: string;
@@ -56,31 +57,13 @@ export const BlueprintQRScanner = () => {
         ferramenta_id: toolId
       });
 
-      if (result.success) {
-        setLastOperation(result);
-        
-        // Mostrar notificação de sucesso
-        toast({
-          title: result.message,
-          description: result.data ? 
-            `${result.data.ferramenta_nome} - ${result.data.colaborador_nome}` :
-            'Operação realizada com sucesso',
-        });
+      setLastOperation(result);
 
-        // Se foi uma devolução, perguntar sobre condição
-        if (result.data?.tipo_operacao === 'DEVOLUÇÃO') {
-          setShowConditionForm(true);
-        } else {
-          // Reset após 3 segundos para nova operação
+      if (result.success) {
+        // Auto-reset para retiradas após 3 segundos
+        if (result.data?.tipo_operacao === 'RETIRADA') {
           setTimeout(resetForm, 3000);
         }
-      } else {
-        toast({
-          title: "Operação não permitida",
-          description: result.message,
-          variant: "destructive",
-        });
-        resetForm();
       }
 
     } catch (error) {
@@ -159,6 +142,14 @@ export const BlueprintQRScanner = () => {
     handleQRCodeScanned('FRM-001274');
   };
 
+  const handleReportIssue = () => {
+    setShowConditionForm(true);
+  };
+
+  const togglePerformanceStats = () => {
+    setShowPerformanceStats(!showPerformanceStats);
+  };
+
   if (!user) {
     return (
       <Card>
@@ -177,9 +168,20 @@ export const BlueprintQRScanner = () => {
       {/* Header do Sistema */}
       <Card className="border-blue-500 bg-blue-50">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-blue-800">
-            <QrCode className="h-6 w-6" />
-            <span>SGF-QR v2.0 - Sistema de Controle de Ativos</span>
+          <CardTitle className="flex items-center justify-between text-blue-800">
+            <div className="flex items-center space-x-2">
+              <QrCode className="h-6 w-6" />
+              <span>SGF-QR v2.0 - Sistema de Controle de Ativos</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={togglePerformanceStats}
+              className="text-blue-700 border-blue-300"
+            >
+              <BarChart3 className="h-4 w-4 mr-1" />
+              Performance
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -197,6 +199,47 @@ export const BlueprintQRScanner = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Estatísticas de Performance (opcional) */}
+      {showPerformanceStats && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <BarChart3 className="h-5 w-5" />
+              <span>Estatísticas de Performance</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {(() => {
+                const stats = blueprintToolsService.getPerformanceStats();
+                return (
+                  <>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {stats.averageResponseTime.toFixed(0)}ms
+                      </div>
+                      <div className="text-sm text-gray-600">Tempo Médio</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {stats.successRate.toFixed(1)}%
+                      </div>
+                      <div className="text-sm text-gray-600">Taxa de Sucesso</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-gray-600">
+                        {stats.totalOperations}
+                      </div>
+                      <div className="text-sm text-gray-600">Total de Operações</div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Scanner QR Code */}
       {showScanner && (
@@ -246,72 +289,12 @@ export const BlueprintQRScanner = () => {
 
       {/* Confirmação de Operação */}
       {lastOperation && !showConditionForm && (
-        <Card className="border-green-500 bg-green-50">
-          <CardHeader className="bg-green-100 border-b border-green-200">
-            <CardTitle className="flex items-center space-x-2 text-green-800">
-              <CheckCircle className="h-6 w-6" />
-              <span>{lastOperation.message}</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            {lastOperation.data && (
-              <div className="space-y-4">
-                <div className="bg-white p-4 rounded-lg border border-green-200">
-                  <h3 className="font-semibold text-lg text-gray-900">
-                    {lastOperation.data.ferramenta_nome}
-                  </h3>
-                  <div className="mt-2 space-y-1 text-gray-700">
-                    <p><strong>Responsável:</strong> {lastOperation.data.colaborador_nome}</p>
-                    <p><strong>Data/Hora:</strong> {lastOperation.data.timestamp}</p>
-                    <p><strong>Operação:</strong> 
-                      <Badge className={
-                        lastOperation.data.tipo_operacao === 'RETIRADA' 
-                          ? 'bg-blue-100 text-blue-800 ml-2' 
-                          : 'bg-green-100 text-green-800 ml-2'
-                      }>
-                        {lastOperation.data.tipo_operacao}
-                      </Badge>
-                    </p>
-                  </div>
-                </div>
-
-                {lastOperation.data.tipo_operacao === 'DEVOLUÇÃO' && (
-                  <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                    <h4 className="font-medium mb-3 flex items-center text-yellow-800">
-                      <AlertTriangle className="h-4 w-4 mr-2" />
-                      A ferramenta está em perfeitas condições?
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Button 
-                        onClick={resetForm}
-                        variant="outline"
-                        className="border-green-300 text-green-700 hover:bg-green-50"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        ✔️ Sim, perfeitas condições
-                      </Button>
-                      <Button 
-                        onClick={() => setShowConditionForm(true)}
-                        variant="outline"
-                        className="border-red-300 text-red-700 hover:bg-red-50"
-                      >
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        ⚠️ Reportar problema/avaria
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {lastOperation.data.tipo_operacao === 'RETIRADA' && (
-                  <div className="text-center">
-                    <Clock className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                    <p className="text-gray-600">Nova operação em 3 segundos...</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <BlueprintConfirmation
+          operation={lastOperation}
+          onNewScan={resetForm}
+          onReportIssue={lastOperation.data?.tipo_operacao === 'DEVOLUÇÃO' ? handleReportIssue : undefined}
+          loading={loading}
+        />
       )}
 
       {/* Formulário de Condição */}
@@ -375,7 +358,8 @@ export const BlueprintQRScanner = () => {
         <Card>
           <CardContent className="p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600">Processando operação...</p>
+            <p className="text-gray-600">Processando operação em tempo real...</p>
+            <p className="text-sm text-gray-500 mt-1">Objetivo: resposta em &lt; 500ms</p>
           </CardContent>
         </Card>
       )}
