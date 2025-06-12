@@ -120,6 +120,26 @@ const createMockClient = () => ({
       error: null
     })
   },
+  // Top-level channel method (used by realTimeSync service)
+  channel: (topic: string) => ({
+    on: function(type: string, filter: any, callback: (payload: any) => void) {
+      console.log(`Demo: Listening to ${type} on ${topic}`, filter);
+      return this;
+    },
+    subscribe: () => {
+      console.log(`Demo: Subscribed to realtime channel ${topic}`);
+      return Promise.resolve('SUBSCRIBED');
+    },
+    unsubscribe: () => {
+      console.log(`Demo: Unsubscribed from ${topic}`);
+      return Promise.resolve('UNSUBSCRIBED');
+    }
+  }),
+  // Remove channel method
+  removeChannel: (channel: any) => {
+    console.log('Demo: Removed channel', channel);
+    return Promise.resolve();
+  },
   realtime: {
     channel: (topic: string) => ({
       on: (event: string, callback: (payload: any) => void) => {
