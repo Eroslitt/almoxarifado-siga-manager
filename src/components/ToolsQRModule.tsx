@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToolsHeader } from '@/components/tools/ToolsHeader';
@@ -23,6 +22,8 @@ import { cacheService } from '@/services/cacheService';
 import { notificationService } from '@/services/notificationService';
 import { reservationService } from '@/services/reservationService';
 import { webSocketService } from '@/services/webSocketService';
+import { BlueprintQRScanner } from '@/components/tools/BlueprintQRScanner';
+import { BlueprintLivePanel } from '@/components/tools/BlueprintLivePanel';
 
 export const ToolsQRModule = () => {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -151,8 +152,10 @@ export const ToolsQRModule = () => {
 
       <ToolsStats stats={toolsStats} />
 
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs defaultValue="blueprint-scanner" className="space-y-4">
         <TabsList className="grid w-full grid-cols-12">
+          <TabsTrigger value="blueprint-scanner">SGF-QR v2.0</TabsTrigger>
+          <TabsTrigger value="blueprint-panel">Painel Gestor</TabsTrigger>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="management">Gestão</TabsTrigger>
           <TabsTrigger value="scanner">QR Scanner</TabsTrigger>
@@ -169,6 +172,14 @@ export const ToolsQRModule = () => {
           <TabsTrigger value="traceability">Rastreabilidade</TabsTrigger>
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="blueprint-scanner" className="space-y-4">
+          <BlueprintQRScanner />
+        </TabsContent>
+
+        <TabsContent value="blueprint-panel" className="space-y-4">
+          <BlueprintLivePanel />
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
