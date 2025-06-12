@@ -26,124 +26,105 @@ const mockUser = {
 };
 
 // Create a comprehensive mock client for demo mode
-const createMockClient = () => ({
-  from: (table: string) => ({
-    select: (columns?: string) => Promise.resolve({ 
-      data: table === 'users' ? [mockUser] : [], 
-      error: null 
-    }),
-    insert: (data: any) => Promise.resolve({ 
-      data: Array.isArray(data) ? data : [data], 
-      error: null 
-    }),
-    update: (data: any) => Promise.resolve({ 
-      data: Array.isArray(data) ? data : [data], 
-      error: null 
-    }),
-    delete: () => Promise.resolve({ data: [], error: null }),
-    eq: function(column: string, value: any) { return this; },
-    single: function() { 
-      return Promise.resolve({ 
-        data: table === 'users' ? mockUser : {}, 
+const createMockClient = () => {
+  const mockClient = {
+    from: (table: string) => ({
+      select: (columns?: string) => Promise.resolve({ 
+        data: table === 'users' ? [mockUser] : [], 
         error: null 
-      }); 
-    },
-    order: function(column: string, options?: any) { return this; },
-    limit: function(count: number) { return this; },
-    range: function(from: number, to: number) { return this; },
-    in: function(column: string, values: any[]) { return this; },
-    or: function(filters: string) { return this; },
-    gte: function(column: string, value: any) { return this; },
-    lte: function(column: string, value: any) { return this; },
-    like: function(column: string, pattern: string) { return this; },
-    ilike: function(column: string, pattern: string) { return this; }
-  }),
-  auth: {
-    signUp: (options: any) => Promise.resolve({ 
-      data: { user: mockUser, session: { user: mockUser, access_token: 'demo-token' } }, 
-      error: null 
+      }),
+      insert: (data: any) => Promise.resolve({ 
+        data: Array.isArray(data) ? data : [data], 
+        error: null 
+      }),
+      update: (data: any) => Promise.resolve({ 
+        data: Array.isArray(data) ? data : [data], 
+        error: null 
+      }),
+      delete: () => Promise.resolve({ data: [], error: null }),
+      eq: function(column: string, value: any) { return this; },
+      single: function() { 
+        return Promise.resolve({ 
+          data: table === 'users' ? mockUser : {}, 
+          error: null 
+        }); 
+      },
+      order: function(column: string, options?: any) { return this; },
+      limit: function(count: number) { return this; },
+      range: function(from: number, to: number) { return this; },
+      in: function(column: string, values: any[]) { return this; },
+      or: function(filters: string) { return this; },
+      gte: function(column: string, value: any) { return this; },
+      lte: function(column: string, value: any) { return this; },
+      like: function(column: string, pattern: string) { return this; },
+      ilike: function(column: string, pattern: string) { return this; }
     }),
-    signInWithPassword: (options: any) => Promise.resolve({ 
-      data: { user: mockUser, session: { user: mockUser, access_token: 'demo-token' } }, 
-      error: null 
-    }),
-    signOut: () => Promise.resolve({ error: null }),
-    getUser: () => Promise.resolve({ 
-      data: { user: mockUser }, 
-      error: null 
-    }),
-    getSession: () => Promise.resolve({ 
-      data: { session: { user: mockUser, access_token: 'demo-token' } }, 
-      error: null 
-    }),
-    onAuthStateChange: (callback: (event: string, session: any) => void) => {
-      // Simulate initial session
-      setTimeout(() => {
-        callback('SIGNED_IN', { user: mockUser, access_token: 'demo-token' });
-      }, 100);
-      
-      return {
-        data: {
-          subscription: {
-            unsubscribe: () => console.log('Demo: Auth subscription unsubscribed')
+    auth: {
+      signUp: (options: any) => Promise.resolve({ 
+        data: { user: mockUser, session: { user: mockUser, access_token: 'demo-token' } }, 
+        error: null 
+      }),
+      signInWithPassword: (options: any) => Promise.resolve({ 
+        data: { user: mockUser, session: { user: mockUser, access_token: 'demo-token' } }, 
+        error: null 
+      }),
+      signOut: () => Promise.resolve({ error: null }),
+      getUser: () => Promise.resolve({ 
+        data: { user: mockUser }, 
+        error: null 
+      }),
+      getSession: () => Promise.resolve({ 
+        data: { session: { user: mockUser, access_token: 'demo-token' } }, 
+        error: null 
+      }),
+      onAuthStateChange: (callback: (event: string, session: any) => void) => {
+        // Simulate initial session
+        setTimeout(() => {
+          callback('SIGNED_IN', { user: mockUser, access_token: 'demo-token' });
+        }, 100);
+        
+        return {
+          data: {
+            subscription: {
+              unsubscribe: () => console.log('Demo: Auth subscription unsubscribed')
+            }
           }
-        }
-      };
-    },
-    updateUser: (data: any) => Promise.resolve({ 
-      data: { user: { ...mockUser, ...data } }, 
-      error: null 
-    })
-  },
-  storage: {
-    from: (bucket: string) => ({
-      upload: (path: string, file: any) => Promise.resolve({ 
-        data: { path, fullPath: `${bucket}/${path}` }, 
+        };
+      },
+      updateUser: (data: any) => Promise.resolve({ 
+        data: { user: { ...mockUser, ...data } }, 
         error: null 
-      }),
-      download: (path: string) => Promise.resolve({ 
-        data: new Blob(['demo file content']), 
-        error: null 
-      }),
-      remove: (paths: string[]) => Promise.resolve({ 
-        data: paths.map(path => ({ name: path })), 
-        error: null 
-      }),
-      getPublicUrl: (path: string) => ({ 
-        data: { publicUrl: `https://demo.supabase.co/storage/v1/object/public/${bucket}/${path}` }
       })
-    })
-  },
-  functions: {
-    invoke: (functionName: string, options?: any) => Promise.resolve({
-      data: { message: `Demo response from ${functionName}` },
-      error: null
-    })
-  },
-  // Top-level channel method (used by realTimeSync service)
-  channel: (topic: string) => ({
-    on: function(type: string, filter: any, callback: (payload: any) => void) {
-      console.log(`Demo: Listening to ${type} on ${topic}`, filter);
-      return this;
     },
-    subscribe: () => {
-      console.log(`Demo: Subscribed to realtime channel ${topic}`);
-      return Promise.resolve('SUBSCRIBED');
+    storage: {
+      from: (bucket: string) => ({
+        upload: (path: string, file: any) => Promise.resolve({ 
+          data: { path, fullPath: `${bucket}/${path}` }, 
+          error: null 
+        }),
+        download: (path: string) => Promise.resolve({ 
+          data: new Blob(['demo file content']), 
+          error: null 
+        }),
+        remove: (paths: string[]) => Promise.resolve({ 
+          data: paths.map(path => ({ name: path })), 
+          error: null 
+        }),
+        getPublicUrl: (path: string) => ({ 
+          data: { publicUrl: `https://demo.supabase.co/storage/v1/object/public/${bucket}/${path}` }
+        })
+      })
     },
-    unsubscribe: () => {
-      console.log(`Demo: Unsubscribed from ${topic}`);
-      return Promise.resolve('UNSUBSCRIBED');
-    }
-  }),
-  // Remove channel method
-  removeChannel: (channel: any) => {
-    console.log('Demo: Removed channel', channel);
-    return Promise.resolve();
-  },
-  realtime: {
+    functions: {
+      invoke: (functionName: string, options?: any) => Promise.resolve({
+        data: { message: `Demo response from ${functionName}` },
+        error: null
+      })
+    },
+    // Top-level channel method (used by realTimeSync service)
     channel: (topic: string) => ({
-      on: (event: string, callback: (payload: any) => void) => {
-        console.log(`Demo: Listening to ${event} on ${topic}`);
+      on: function(type: string, filter: any, callback: (payload: any) => void) {
+        console.log(`Demo: Listening to ${type} on ${topic}`, filter);
         return this;
       },
       subscribe: () => {
@@ -154,12 +135,38 @@ const createMockClient = () => ({
         console.log(`Demo: Unsubscribed from ${topic}`);
         return Promise.resolve('UNSUBSCRIBED');
       }
-    })
-  }
-});
+    }),
+    // Remove channel method
+    removeChannel: (channel: any) => {
+      console.log('Demo: Removed channel', channel);
+      return Promise.resolve();
+    },
+    realtime: {
+      channel: (topic: string) => ({
+        on: (event: string, callback: (payload: any) => void) => {
+          console.log(`Demo: Listening to ${event} on ${topic}`);
+          return this;
+        },
+        subscribe: () => {
+          console.log(`Demo: Subscribed to realtime channel ${topic}`);
+          return Promise.resolve('SUBSCRIBED');
+        },
+        unsubscribe: () => {
+          console.log(`Demo: Unsubscribed from ${topic}`);
+          return Promise.resolve('UNSUBSCRIBED');
+        }
+      })
+    }
+  };
 
-// Create the client
-export const supabase = isDemo ? createMockClient() as any : createClient<Database>(supabaseUrl, supabaseAnonKey);
+  return mockClient;
+};
+
+// Create the client with proper typing
+const realClient = createClient<Database>(supabaseUrl, supabaseAnonKey);
+const mockClient = createMockClient();
+
+export const supabase = isDemo ? mockClient as typeof realClient : realClient;
 
 export const isDemoMode = isDemo;
 
