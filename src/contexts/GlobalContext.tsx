@@ -198,7 +198,7 @@ export const GlobalProvider: React.FC<GlobalProviderProps> = ({ children }) => {
           id: `checkout-${Date.now()}`,
           type: 'info',
           title: 'Ferramenta Retirada',
-          message: `Ferramenta ${data.toolId} retirada por ${data.user}`,
+          message: `Ferramenta ${data.toolId} retirada por usuário ${data.userId}`,
           timestamp: data.timestamp,
           read: false,
           priority: 'medium'

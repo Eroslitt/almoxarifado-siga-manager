@@ -1,5 +1,5 @@
 
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useGlobalContext } from '@/contexts/GlobalContext';
 import { analyticsService } from '@/services/analyticsService';
 import { eventBus } from '@/services/eventBus';

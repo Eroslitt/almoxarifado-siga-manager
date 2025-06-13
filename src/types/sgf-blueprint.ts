@@ -50,3 +50,47 @@ export interface BlueprintLiveStatus {
   retirada_em: string | null;
   tempo_posse: string | null; // Ex: "1h 23min"
 }
+
+// Export analytics types for compatibility
+export interface ToolUsageMetrics {
+  toolId: string;
+  toolName: string;
+  totalUsageHours: number;
+  usageCount: number;
+  averageUsageTime: number;
+  lastUsed: string;
+  mostFrequentUser: string;
+  utilizationRate: number;
+}
+
+export interface PeriodMetrics {
+  period: string;
+  totalCheckouts: number;
+  totalCheckins: number;
+  activeTools: number;
+  utilizationRate: number;
+  topTools: Array<{
+    name: string;
+    usage: number;
+  }>;
+}
+
+export interface MaintenanceMetrics {
+  scheduled: number;
+  overdue: number;
+  completed: number;
+  averageCost: number;
+  nextDue: Array<{
+    toolName: string;
+    dueDate: string;
+    priority: 'low' | 'medium' | 'high';
+  }>;
+}
+
+export interface Anomaly {
+  type: 'unusual_usage' | 'extended_possession' | 'maintenance_overdue';
+  severity: 'low' | 'medium' | 'high';
+  description: string;
+  toolId?: string;
+  recommendation: string;
+}
