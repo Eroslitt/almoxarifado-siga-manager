@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { GlobalProvider } from '@/contexts/GlobalContext';
 import { ToolsProvider } from '@/contexts/ToolsContext';
 import { ToolsServiceInitializer } from '@/components/tools/ToolsServiceInitializer';
 import { ToolsHeader } from '@/components/tools/ToolsHeader';
@@ -21,10 +22,12 @@ const ToolsContent: React.FC = () => {
 
 export const ToolsQRModule = () => {
   return (
-    <ToolsProvider>
-      <ToolsServiceInitializer>
-        <ToolsContent />
-      </ToolsServiceInitializer>
-    </ToolsProvider>
+    <GlobalProvider>
+      <ToolsProvider>
+        <ToolsServiceInitializer>
+          <ToolsContent />
+        </ToolsServiceInitializer>
+      </ToolsProvider>
+    </GlobalProvider>
   );
 };

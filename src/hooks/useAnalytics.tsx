@@ -1,62 +1,76 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useGlobalContext } from '@/contexts/GlobalContext';
 import { analyticsService } from '@/services/analyticsService';
+import { eventBus } from '@/services/eventBus';
 
 export const useAnalytics = () => {
-  const [usageMetrics, setUsageMetrics] = useState<any[]>([]);
-  const [periodMetrics, setPeriodMetrics] = useState<any[]>([]);
-  const [maintenanceMetrics, setMaintenanceMetrics] = useState<any>(null);
-  const [anomalies, setAnomalies] = useState<any[]>([]);
-  const [trends, setTrends] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const { state, actions } = useGlobalContext();
+  const { analytics } = state;
 
   const loadUsageMetrics = useCallback(async () => {
     try {
+      actions.updateAnalytics({ isLoading: true });
       const data = await analyticsService.getToolUsageMetrics();
-      setUsageMetrics(data);
+      actions.updateAnalytics({ 
+        usageMetrics: data, 
+        isLoading: false, 
+        lastRefresh: new Date() 
+      });
     } catch (error) {
       console.error('Error loading usage metrics:', error);
+      actions.updateAnalytics({ isLoading: false });
     }
-  }, []);
+  }, [actions]);
 
   const loadPeriodMetrics = useCallback(async (period: 'daily' | 'weekly' | 'monthly') => {
     try {
       const data = await analyticsService.getPeriodMetrics(period);
-      setPeriodMetrics(data);
+      actions.updateAnalytics({ periodMetrics: data });
     } catch (error) {
       console.error('Error loading period metrics:', error);
     }
-  }, []);
+  }, [actions]);
 
   const loadMaintenanceMetrics = useCallback(async () => {
     try {
       const data = await analyticsService.getMaintenanceMetrics();
-      setMaintenanceMetrics(data);
+      actions.updateAnalytics({ maintenanceMetrics: data });
     } catch (error) {
       console.error('Error loading maintenance metrics:', error);
     }
-  }, []);
+  }, [actions]);
 
   const detectAnomalies = useCallback(async () => {
     try {
       const data = await analyticsService.detectAnomalies();
-      setAnomalies(data);
+      actions.updateAnalytics({ anomalies: data });
+      
+      // Emit events for high-priority anomalies
+      data.filter(anomaly => anomaly.severity === 'high').forEach(anomaly => {
+        eventBus.emit('anomaly:detected', {
+          type: anomaly.type,
+          severity: anomaly.severity,
+          toolId: anomaly.toolId
+        });
+      });
     } catch (error) {
       console.error('Error detecting anomalies:', error);
     }
-  }, []);
+  }, [actions]);
 
   const loadTrends = useCallback(async () => {
     try {
       const data = await analyticsService.getUtilizationTrends();
-      setTrends(data);
+      actions.updateAnalytics({ trends: data });
     } catch (error) {
       console.error('Error loading trends:', error);
     }
-  }, []);
+  }, [actions]);
 
   const generateReport = useCallback(async (type: 'usage' | 'maintenance' | 'efficiency', format: 'pdf' | 'excel') => {
-    setIsLoading(true);
+    actions.updateAnalytics({ isLoading: true });
+    
     try {
       const blob = await analyticsService.generateReport(type, format);
       
@@ -70,30 +84,40 @@ export const useAnalytics = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
+      // Emit success event
+      eventBus.emit('system:report:generated', {
+        type,
+        format,
+        timestamp: new Date()
+      });
+      
       return true;
     } catch (error) {
       console.error('Error generating report:', error);
       return false;
     } finally {
-      setIsLoading(false);
+      actions.updateAnalytics({ isLoading: false });
     }
-  }, []);
+  }, [actions]);
 
-  useEffect(() => {
-    loadUsageMetrics();
-    loadPeriodMetrics('daily');
-    loadMaintenanceMetrics();
-    detectAnomalies();
-    loadTrends();
-  }, [loadUsageMetrics, loadPeriodMetrics, loadMaintenanceMetrics, detectAnomalies, loadTrends]);
+  // Auto-load data on mount if not already loaded
+  React.useEffect(() => {
+    if (analytics.usageMetrics.length === 0 && !analytics.isLoading) {
+      loadUsageMetrics();
+      loadPeriodMetrics('daily');
+      loadMaintenanceMetrics();
+      detectAnomalies();
+      loadTrends();
+    }
+  }, [loadUsageMetrics, loadPeriodMetrics, loadMaintenanceMetrics, detectAnomalies, loadTrends, analytics.usageMetrics.length, analytics.isLoading]);
 
   return {
-    usageMetrics,
-    periodMetrics,
-    maintenanceMetrics,
-    anomalies,
-    trends,
-    isLoading,
+    usageMetrics: analytics.usageMetrics,
+    periodMetrics: analytics.periodMetrics,
+    maintenanceMetrics: analytics.maintenanceMetrics,
+    anomalies: analytics.anomalies,
+    trends: analytics.trends,
+    isLoading: analytics.isLoading,
     loadUsageMetrics,
     loadPeriodMetrics,
     loadMaintenanceMetrics,

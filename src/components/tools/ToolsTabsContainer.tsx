@@ -8,15 +8,20 @@ import { ToolsManagement } from './ToolsManagement';
 import { QRScanner } from './QRScanner';
 import { SmartQRScanner } from './SmartQRScanner';
 import { RealTimeMovementsDashboard } from './RealTimeMovementsDashboard';
-import { NotificationCenter } from '@/components/notifications/NotificationCenter';
-import { KittingCheckout } from '@/components/kitting/KittingCheckout';
-import { WorkTemplateManager } from '@/components/kitting/WorkTemplateManager';
 import { QRCodeGenerator } from './QRCodeGenerator';
 import { LabelPrinter } from './LabelPrinter';
 import { RealTimeMovements } from './RealTimeMovements';
-import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
-import { ReservationCalendar } from '@/components/reservations/ReservationCalendar';
-import { MaintenanceDashboard } from '@/components/maintenance/MaintenanceDashboard';
+
+// Lazy loaded components
+import { 
+  LazyWrapper,
+  LazyAnalyticsDashboard,
+  LazyReservationCalendar,
+  LazyMaintenanceDashboard,
+  LazyKittingCheckout,
+  LazyWorkTemplateManager,
+  LazyNotificationCenter
+} from './LazyComponents';
 
 export const ToolsTabsContainer: React.FC = () => {
   // Mock tools para o gerador/impressora
@@ -93,15 +98,21 @@ export const ToolsTabsContainer: React.FC = () => {
       </ResponsiveTabsContent>
 
       <ResponsiveTabsContent value="analytics" className="space-y-4">
-        <AnalyticsDashboard />
+        <LazyWrapper>
+          <LazyAnalyticsDashboard />
+        </LazyWrapper>
       </ResponsiveTabsContent>
 
       <ResponsiveTabsContent value="reservations" className="space-y-4">
-        <ReservationCalendar />
+        <LazyWrapper>
+          <LazyReservationCalendar />
+        </LazyWrapper>
       </ResponsiveTabsContent>
 
       <ResponsiveTabsContent value="maintenance" className="space-y-4">
-        <MaintenanceDashboard />
+        <LazyWrapper>
+          <LazyMaintenanceDashboard />
+        </LazyWrapper>
       </ResponsiveTabsContent>
 
       <ResponsiveTabsContent value="management" className="space-y-4">
@@ -121,15 +132,21 @@ export const ToolsTabsContainer: React.FC = () => {
       </ResponsiveTabsContent>
 
       <ResponsiveTabsContent value="notifications" className="space-y-4">
-        <NotificationCenter />
+        <LazyWrapper>
+          <LazyNotificationCenter />
+        </LazyWrapper>
       </ResponsiveTabsContent>
 
       <ResponsiveTabsContent value="kitting" className="space-y-4">
-        <KittingCheckout />
+        <LazyWrapper>
+          <LazyKittingCheckout />
+        </LazyWrapper>
       </ResponsiveTabsContent>
 
       <ResponsiveTabsContent value="templates" className="space-y-4">
-        <WorkTemplateManager />
+        <LazyWrapper>
+          <LazyWorkTemplateManager />
+        </LazyWrapper>
       </ResponsiveTabsContent>
 
       <ResponsiveTabsContent value="qr-generator" className="space-y-4">
