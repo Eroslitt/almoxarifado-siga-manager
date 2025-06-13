@@ -1,9 +1,16 @@
 // Global Application Types - Centralized Interface Definitions
 
-// Re-export existing types from sgf-blueprint
-export type { BlueprintLiveStatus, ToolUsageMetrics, PeriodMetrics, MaintenanceMetrics, Anomaly } from './sgf-blueprint';
+// Import and re-export types from sgf-blueprint
+export type { 
+  BlueprintLiveStatus, 
+  BlueprintTool, 
+  BlueprintCollaborator, 
+  BlueprintMovement,
+  BlueprintOperationRequest,
+  BlueprintOperationResponse
+} from './sgf-blueprint';
 
-// Define missing types that are referenced but not defined
+// Define analytics and extended types
 export interface ToolUsageMetrics {
   toolId: string;
   toolName: string;
@@ -151,7 +158,7 @@ export interface ToolsState {
     inUse: number;
     maintenance: number;
   };
-  liveStatus: BlueprintLiveStatus[];
+  liveStatus: import('./sgf-blueprint').BlueprintLiveStatus[];
   isLoading: boolean;
   error: string | null;
   lastUpdate: Date | null;
@@ -202,7 +209,7 @@ export interface SystemState {
   performance: PerformanceMetrics;
 }
 
-// Event System Types - Updated with missing events
+// Event System Types
 export interface AppEvents {
   'tool:status:changed': { toolId: string; status: ToolStatus; user: string };
   'tool:checkout': { toolId: string; userId: string; timestamp: Date };
