@@ -1,5 +1,4 @@
-
-import { useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { supabase, isDemoMode } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { User } from '@/types/database';
