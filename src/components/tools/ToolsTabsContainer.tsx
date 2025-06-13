@@ -14,6 +14,9 @@ import { WorkTemplateManager } from '@/components/kitting/WorkTemplateManager';
 import { QRCodeGenerator } from './QRCodeGenerator';
 import { LabelPrinter } from './LabelPrinter';
 import { RealTimeMovements } from './RealTimeMovements';
+import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
+import { ReservationCalendar } from '@/components/reservations/ReservationCalendar';
+import { MaintenanceDashboard } from '@/components/maintenance/MaintenanceDashboard';
 
 export const ToolsTabsContainer: React.FC = () => {
   // Mock tools para o gerador/impressora
@@ -60,6 +63,9 @@ export const ToolsTabsContainer: React.FC = () => {
         <ResponsiveTabsTrigger value="blueprint-scanner">SGF-QR v2.0</ResponsiveTabsTrigger>
         <ResponsiveTabsTrigger value="blueprint-panel">Painel Gestor</ResponsiveTabsTrigger>
         <ResponsiveTabsTrigger value="overview">Visão Geral</ResponsiveTabsTrigger>
+        <ResponsiveTabsTrigger value="analytics">Analytics</ResponsiveTabsTrigger>
+        <ResponsiveTabsTrigger value="reservations">Reservas</ResponsiveTabsTrigger>
+        <ResponsiveTabsTrigger value="maintenance">Manutenção</ResponsiveTabsTrigger>
         <ResponsiveTabsTrigger value="management">Gestão</ResponsiveTabsTrigger>
         <ResponsiveTabsTrigger value="scanner">QR Scanner</ResponsiveTabsTrigger>
         <ResponsiveTabsTrigger value="smart-scanner">Smart Scanner</ResponsiveTabsTrigger>
@@ -84,6 +90,18 @@ export const ToolsTabsContainer: React.FC = () => {
           <ToolsOverview />
           <RealTimeMovements />
         </div>
+      </ResponsiveTabsContent>
+
+      <ResponsiveTabsContent value="analytics" className="space-y-4">
+        <AnalyticsDashboard />
+      </ResponsiveTabsContent>
+
+      <ResponsiveTabsContent value="reservations" className="space-y-4">
+        <ReservationCalendar />
+      </ResponsiveTabsContent>
+
+      <ResponsiveTabsContent value="maintenance" className="space-y-4">
+        <MaintenanceDashboard />
       </ResponsiveTabsContent>
 
       <ResponsiveTabsContent value="management" className="space-y-4">
