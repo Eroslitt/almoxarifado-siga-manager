@@ -1,24 +1,15 @@
 
-import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { supabase, isDemoMode } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { User } from '@/types/database';
-
-interface AuthContextType {
-  user: User | null;
-  supabaseUser: SupabaseUser | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
-  signOut: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext } from '@/contexts/AuthContext';
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   console.log('🔄 AuthProvider rendering...');
   
   const [user, setUser] = useState<User | null>(null);
@@ -177,7 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const contextValue: AuthContextType = {
+  const contextValue = {
     user,
     supabaseUser,
     loading,
@@ -192,10 +183,4 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
-  }
-  return context;
-};
+export { useAuth } from '@/contexts/AuthContext';
