@@ -1,4 +1,6 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+
+import * as React from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { supabase, isDemoMode } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { User } from '@/types/database';
@@ -15,6 +17,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   console.log('🔄 AuthProvider rendering...');
+  console.log('🔍 React available:', typeof React);
+  console.log('🔍 useState available:', typeof useState);
   
   const [user, setUser] = useState<User | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
