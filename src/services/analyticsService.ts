@@ -208,8 +208,13 @@ class AnalyticsService {
     utilization: number;
     trend: 'up' | 'down' | 'stable';
   }>> {
-    const cached = await advancedCacheService.get('utilization-trends');
-    if (cached) return cached;
+    const cached = await advancedCacheService.get<Array<{
+      date: string;
+      utilization: number;
+      trend: 'up' | 'down' | 'stable';
+    }>>('utilization-trends');
+    
+    if (cached && Array.isArray(cached)) return cached;
 
     // Generate trend data for the last 30 days
     const trends = [];
@@ -221,14 +226,17 @@ class AnalyticsService {
       const variation = Math.sin(i / 7) * 10 + Math.random() * 10;
       const utilization = Math.max(0, Math.min(100, baseUtilization + variation));
       
+      let trend: 'up' | 'down' | 'stable' = 'stable';
+      if (trends.length > 0) {
+        const previousUtilization = trends[trends.length - 1].utilization;
+        if (utilization > previousUtilization + 2) trend = 'up';
+        else if (utilization < previousUtilization - 2) trend = 'down';
+      }
+      
       trends.push({
         date: date.toISOString().split('T')[0],
         utilization: Math.round(utilization * 100) / 100,
-        trend: i > 0 && trends[trends.length - 1] 
-          ? utilization > trends[trends.length - 1].utilization + 2 ? 'up' 
-          : utilization < trends[trends.length - 1].utilization - 2 ? 'down' 
-          : 'stable'
-          : 'stable' as const
+        trend
       });
     }
 
