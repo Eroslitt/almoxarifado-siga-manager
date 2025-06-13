@@ -1,8 +1,7 @@
-
 // Global Application Types - Centralized Interface Definitions
 
 // Re-export existing types from sgf-blueprint
-export type { BlueprintLiveStatus } from './sgf-blueprint';
+export type { BlueprintLiveStatus, ToolUsageMetrics, PeriodMetrics, MaintenanceMetrics, Anomaly } from './sgf-blueprint';
 
 // Define missing types that are referenced but not defined
 export interface ToolUsageMetrics {

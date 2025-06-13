@@ -1,203 +1,119 @@
-
 import { eventBus } from './eventBus';
-import { advancedCacheService } from './advancedCacheService';
 import { AppNotification } from '@/types/global';
 
 class UnifiedNotificationService {
-  private notificationQueue: AppNotification[] = [];
-  private isProcessing = false;
+  private notifications: AppNotification[] = [];
+  private subscribers: ((notifications: AppNotification[]) => void)[] = [];
+  private unreadCount: number = 0;
 
-  async init(): Promise<void> {
-    console.log('🔔 Initializing Unified Notification Service...');
-    
-    // Request notification permission
-    if ('Notification' in window && Notification.permission === 'default') {
-      await Notification.requestPermission();
-    }
-
-    // Set up event listeners
-    this.setupEventListeners();
-    
-    // Process any queued notifications
-    this.processQueue();
+  constructor() {
+    console.log('📢 Unified Notification Service started');
+    this.loadFromLocalStorage();
   }
 
-  private setupEventListeners(): void {
-    // Listen to all events that should trigger notifications
-    eventBus.on('tool:checkout', (data) => {
-      this.createNotification({
-        type: 'info',
-        title: 'Ferramenta Retirada',
-        message: `${data.toolId} retirada por ${data.userId}`,
-        priority: 'medium'
-      });
-    });
-
-    eventBus.on('tool:checkin', (data) => {
-      this.createNotification({
-        type: 'success',
-        title: 'Ferramenta Devolvida',
-        message: `${data.toolId} devolvida por ${data.userId}`,
-        priority: 'low'
-      });
-    });
-
-    eventBus.on('maintenance:scheduled', (data) => {
-      this.createNotification({
-        type: 'info',
-        title: 'Manutenção Agendada',
-        message: `Manutenção de ${data.toolId} agendada para ${data.date.toLocaleDateString('pt-BR')}`,
-        priority: 'medium'
-      });
-    });
-
-    eventBus.on('anomaly:detected', (data) => {
-      this.createNotification({
-        type: data.severity === 'high' ? 'error' : 'warning',
-        title: 'Anomalia Detectada',
-        message: `${data.type} - Severidade: ${data.severity}`,
-        priority: data.severity,
-        actionUrl: data.toolId ? `/tools/${data.toolId}` : undefined
-      });
-    });
-
-    eventBus.on('reservation:created', (data) => {
-      this.createNotification({
-        type: 'info',
-        title: 'Nova Reserva',
-        message: `Reserva criada para ${data.toolId}`,
-        priority: 'medium',
-        actionUrl: `/reservations/${data.reservationId}`
-      });
-    });
-
-    eventBus.on('stock:low', (data) => {
-      this.createNotification({
-        type: 'warning',
-        title: 'Estoque Baixo',
-        message: `${data.itemId}: ${data.currentStock} unidades (mín: ${data.minStock})`,
-        priority: 'high'
-      });
-    });
+  private notifySubscribers() {
+    this.subscribers.forEach(subscriber => subscriber([...this.notifications]));
   }
 
-  private createNotification(params: Omit<AppNotification, 'id' | 'timestamp' | 'read'>): void {
-    const notification: AppNotification = {
-      id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+  public subscribe(callback: (notifications: AppNotification[]) => void): () => void {
+    this.subscribers.push(callback);
+    callback([...this.notifications]); // Emit initial value
+    return () => {
+      this.subscribers = this.subscribers.filter(sub => sub !== callback);
+      console.log('📢 Subscriber unsubscribed');
+    };
+  }
+
+  public unsubscribe(callback: (notifications: AppNotification[]) => void): void {
+    this.subscribers = this.subscribers.filter(sub => sub !== callback);
+  }
+
+  async create(notification: Omit<AppNotification, 'id' | 'timestamp'>): Promise<AppNotification> {
+    const newNotification: AppNotification = {
+      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date(),
       read: false,
-      ...params
+      ...notification
     };
 
-    this.notificationQueue.push(notification);
-    this.processQueue();
-  }
-
-  private async processQueue(): Promise<void> {
-    if (this.isProcessing || this.notificationQueue.length === 0) return;
-    
-    this.isProcessing = true;
-    
-    try {
-      while (this.notificationQueue.length > 0) {
-        const notification = this.notificationQueue.shift()!;
-        
-        // Add to global state via event bus
-        eventBus.emit('system:notification:created', notification);
-        
-        // Show browser notification if permitted and enabled
-        await this.showBrowserNotification(notification);
-        
-        // Cache notification
-        await this.cacheNotification(notification);
-        
-        // Small delay to prevent spam
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    } catch (error) {
-      console.error('Error processing notification queue:', error);
-    } finally {
-      this.isProcessing = false;
-    }
-  }
-
-  private async showBrowserNotification(notification: AppNotification): Promise<void> {
-    if (!('Notification' in window) || Notification.permission !== 'granted') {
-      return;
+    this.notifications.unshift(newNotification);
+    if (!newNotification.read) {
+      this.unreadCount++;
     }
 
-    try {
-      const browserNotification = new Notification(notification.title, {
-        body: notification.message,
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
-        tag: notification.id,
-        requireInteraction: notification.priority === 'high',
-        data: {
-          id: notification.id,
-          actionUrl: notification.actionUrl
-        }
+    this.notifySubscribers();
+
+    // Emit event with correct payload structure
+    eventBus.emit('system:notification:created', {
+      notificationId: newNotification.id,
+      type: newNotification.type,
+      timestamp: newNotification.timestamp
+    });
+
+    console.log('📢 Notification created:', newNotification);
+    return newNotification;
+  }
+
+  async getAll(): Promise<AppNotification[]> {
+    return [...this.notifications];
+  }
+
+  async getUnread(): Promise<AppNotification[]> {
+    return this.notifications.filter(notification => !notification.read);
+  }
+
+  async markAsRead(id: string): Promise<void> {
+    const notification = this.notifications.find(n => n.id === id);
+    if (notification && !notification.read) {
+      notification.read = true;
+      this.unreadCount = Math.max(0, this.unreadCount - 1);
+      this.notifySubscribers();
+
+      // Emit event with correct payload structure
+      eventBus.emit('system:notification:read', {
+        notificationId: id,
+        timestamp: new Date()
       });
-
-      browserNotification.onclick = () => {
-        window.focus();
-        if (notification.actionUrl) {
-          window.location.href = notification.actionUrl;
-        }
-        browserNotification.close();
-      };
-
-      // Auto-close low priority notifications
-      if (notification.priority === 'low') {
-        setTimeout(() => browserNotification.close(), 5000);
-      }
-
-    } catch (error) {
-      console.error('Error showing browser notification:', error);
-    }
-  }
-
-  private async cacheNotification(notification: AppNotification): Promise<void> {
-    try {
-      const cached = await advancedCacheService.get<AppNotification[]>('recent-notifications') || [];
-      const updated = [notification, ...cached.slice(0, 99)]; // Keep last 100
-      await advancedCacheService.set('recent-notifications', updated, 86400); // 24 hours
-    } catch (error) {
-      console.error('Error caching notification:', error);
-    }
-  }
-
-  async getRecentNotifications(): Promise<AppNotification[]> {
-    try {
-      return await advancedCacheService.get<AppNotification[]>('recent-notifications') || [];
-    } catch (error) {
-      console.error('Error loading recent notifications:', error);
-      return [];
-    }
-  }
-
-  async markAsRead(notificationId: string): Promise<void> {
-    try {
-      const cached = await advancedCacheService.get<AppNotification[]>('recent-notifications') || [];
-      const updated = cached.map(n => 
-        n.id === notificationId ? { ...n, read: true } : n
-      );
-      await advancedCacheService.set('recent-notifications', updated, 86400);
-      
-      // Emit event for global state update
-      eventBus.emit('system:notification:read', notificationId);
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
     }
   }
 
   async clearAll(): Promise<void> {
-    try {
-      await advancedCacheService.invalidate('recent-notifications');
-      eventBus.emit('system:notifications:cleared', {});
-    } catch (error) {
-      console.error('Error clearing notifications:', error);
+    const count = this.notifications.length;
+    this.notifications = [];
+    this.unreadCount = 0;
+    this.notifySubscribers();
+
+    // Emit event with correct payload structure
+    eventBus.emit('system:notifications:cleared', {
+      count,
+      timestamp: new Date()
+    });
+  }
+
+  getUnreadCount(): number {
+    return this.unreadCount;
+  }
+
+  async setSettings(settings: any): Promise<void> {
+    localStorage.setItem('notificationSettings', JSON.stringify(settings));
+  }
+
+  async getSettings(): Promise<any> {
+    const settings = localStorage.getItem('notificationSettings');
+    return settings ? JSON.parse(settings) : {};
+  }
+
+  private async loadFromLocalStorage(): Promise<void> {
+    const storedNotifications = localStorage.getItem('notifications');
+    if (storedNotifications) {
+      this.notifications = JSON.parse(storedNotifications);
+      this.unreadCount = this.notifications.filter(n => !n.read).length;
+      this.notifySubscribers();
     }
+  }
+
+  private async saveToLocalStorage(): Promise<void> {
+    localStorage.setItem('notifications', JSON.stringify(this.notifications));
   }
 }
 
