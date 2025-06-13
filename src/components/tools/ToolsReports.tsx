@@ -13,7 +13,9 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  LineChart,
+  Line
 } from 'recharts';
 import { 
   Download, 
@@ -21,19 +23,37 @@ import {
   TrendingUp, 
   Clock,
   User,
-  Wrench
+  Wrench,
+  AlertTriangle,
+  FileText,
+  Settings
 } from 'lucide-react';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { useEffect, useState } from 'react';
 
 export const ToolsReports = () => {
-  const utilizationData = [
-    { name: 'Seg', utilizacao: 65 },
-    { name: 'Ter', utilizacao: 78 },
-    { name: 'Qua', utilizacao: 82 },
-    { name: 'Qui', utilizacao: 75 },
-    { name: 'Sex', utilizacao: 88 },
-    { name: 'Sáb', utilizacao: 45 },
-    { name: 'Dom', utilizacao: 20 },
-  ];
+  const { 
+    usageMetrics, 
+    periodMetrics, 
+    maintenanceMetrics, 
+    anomalies, 
+    trends,
+    isLoading,
+    generateReport,
+    loadPeriodMetrics
+  } = useAnalytics();
+
+  const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+
+  useEffect(() => {
+    loadPeriodMetrics(selectedPeriod);
+  }, [selectedPeriod, loadPeriodMetrics]);
+
+  const utilizationData = trends.map((trend, index) => ({
+    name: new Date(trend.date).toLocaleDateString('pt-BR', { weekday: 'short' }),
+    utilizacao: trend.utilization,
+    trend: trend.trend
+  }));
 
   const categoryData = [
     { name: 'Elétricas', value: 35, color: '#3b82f6' },
@@ -42,19 +62,12 @@ export const ToolsReports = () => {
     { name: 'Medição', value: 5, color: '#ef4444' },
   ];
 
-  const topUsers = [
-    { name: 'João Silva', department: 'Manutenção', checkouts: 45, avgTime: '4.2h' },
-    { name: 'Carlos Oliveira', department: 'Produção', checkouts: 38, avgTime: '3.8h' },
-    { name: 'Ana Costa', department: 'Montagem', checkouts: 32, avgTime: '5.1h' },
-    { name: 'Maria Santos', department: 'Qualidade', checkouts: 28, avgTime: '2.9h' },
-  ];
-
-  const maintenanceStats = [
-    { tool: 'Furadeira de Impacto', issues: 8, avgRepairTime: '2.5 dias' },
-    { tool: 'Esmerilhadeira Angular', issues: 6, avgRepairTime: '1.8 dias' },
-    { tool: 'Chave de Impacto', issues: 5, avgRepairTime: '3.2 dias' },
-    { tool: 'Parafusadeira Elétrica', issues: 4, avgRepairTime: '1.5 dias' },
-  ];
+  const handleExportReport = async (type: 'usage' | 'maintenance' | 'efficiency', format: 'pdf' | 'excel') => {
+    const success = await generateReport(type, format);
+    if (!success) {
+      console.error('Failed to generate report');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -65,13 +78,30 @@ export const ToolsReports = () => {
           <p className="text-gray-600">Análise detalhada do uso de ferramentas</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">
-            <Calendar className="h-4 w-4 mr-2" />
-            Período
-          </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <select 
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value as 'daily' | 'weekly' | 'monthly')}
+            className="px-3 py-2 border rounded-md"
+          >
+            <option value="daily">Diário</option>
+            <option value="weekly">Semanal</option>
+            <option value="monthly">Mensal</option>
+          </select>
+          <Button 
+            variant="outline"
+            onClick={() => handleExportReport('usage', 'pdf')}
+            disabled={isLoading}
+          >
             <Download className="h-4 w-4 mr-2" />
-            Exportar
+            PDF
+          </Button>
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={() => handleExportReport('usage', 'excel')}
+            disabled={isLoading}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Excel
           </Button>
         </div>
       </div>
@@ -84,8 +114,10 @@ export const ToolsReports = () => {
               <TrendingUp className="h-8 w-8 text-green-600" />
               <div>
                 <p className="text-sm text-gray-600">Taxa de Utilização</p>
-                <p className="text-2xl font-bold text-green-600">73%</p>
-                <p className="text-xs text-gray-500">+5% vs mês anterior</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {trends.length > 0 ? `${Math.round(trends[trends.length - 1].utilization)}%` : '73%'}
+                </p>
+                <p className="text-xs text-gray-500">vs período anterior</p>
               </div>
             </div>
           </CardContent>
@@ -97,7 +129,12 @@ export const ToolsReports = () => {
               <Clock className="h-8 w-8 text-blue-600" />
               <div>
                 <p className="text-sm text-gray-600">Tempo Médio de Uso</p>
-                <p className="text-2xl font-bold">4.2h</p>
+                <p className="text-2xl font-bold">
+                  {usageMetrics.length > 0 
+                    ? `${(usageMetrics.reduce((acc, m) => acc + m.averageUsageTime, 0) / usageMetrics.length).toFixed(1)}h`
+                    : '4.2h'
+                  }
+                </p>
                 <p className="text-xs text-gray-500">Por checkout</p>
               </div>
             </div>
@@ -110,8 +147,10 @@ export const ToolsReports = () => {
               <User className="h-8 w-8 text-purple-600" />
               <div>
                 <p className="text-sm text-gray-600">Checkouts Hoje</p>
-                <p className="text-2xl font-bold">28</p>
-                <p className="text-xs text-gray-500">+12 vs ontem</p>
+                <p className="text-2xl font-bold">
+                  {periodMetrics.length > 0 ? periodMetrics[periodMetrics.length - 1]?.totalCheckouts || 28 : 28}
+                </p>
+                <p className="text-xs text-gray-500">vs ontem</p>
               </div>
             </div>
           </CardContent>
@@ -131,21 +170,54 @@ export const ToolsReports = () => {
         </Card>
       </div>
 
+      {/* Alertas e Anomalias */}
+      {anomalies.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              <span>Anomalias Detectadas</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {anomalies.slice(0, 3).map((anomaly, index) => (
+                <div key={index} className={`p-3 border-l-4 rounded-r-lg ${
+                  anomaly.severity === 'high' ? 'border-red-500 bg-red-50' :
+                  anomaly.severity === 'medium' ? 'border-orange-500 bg-orange-50' :
+                  'border-yellow-500 bg-yellow-50'
+                }`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium">{anomaly.description}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{anomaly.recommendation}</p>
+                    </div>
+                    <Badge variant={anomaly.severity === 'high' ? 'destructive' : 'secondary'}>
+                      {anomaly.severity}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Utilização Semanal</CardTitle>
+            <CardTitle>Tendência de Utilização</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={utilizationData}>
+              <LineChart data={utilizationData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip formatter={(value) => [`${value}%`, 'Utilização']} />
-                <Bar dataKey="utilizacao" fill="#3b82f6" />
-              </BarChart>
+                <Line dataKey="utilizacao" stroke="#3b82f6" strokeWidth={2} />
+              </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
@@ -177,28 +249,28 @@ export const ToolsReports = () => {
         </Card>
       </div>
 
-      {/* Tabelas de Ranking */}
+      {/* Tabelas de Métricas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Top Usuários</CardTitle>
+            <CardTitle>Top Ferramentas por Uso</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {topUsers.map((user, index) => (
-                <div key={user.name} className="flex items-center justify-between p-3 border rounded-lg">
+              {usageMetrics.slice(0, 5).map((metric, index) => (
+                <div key={metric.toolId} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600">
                       {index + 1}
                     </div>
                     <div>
-                      <h4 className="font-medium">{user.name}</h4>
-                      <p className="text-sm text-gray-600">{user.department}</p>
+                      <h4 className="font-medium">{metric.toolName}</h4>
+                      <p className="text-sm text-gray-600">{metric.usageCount} usos</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold">{user.checkouts} checkouts</p>
-                    <p className="text-sm text-gray-600">Média: {user.avgTime}</p>
+                    <p className="font-semibold">{metric.utilizationRate.toFixed(1)}%</p>
+                    <p className="text-sm text-gray-600">{metric.totalUsageHours}h total</p>
                   </div>
                 </div>
               ))}
@@ -208,24 +280,34 @@ export const ToolsReports = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Estatísticas de Manutenção</CardTitle>
+            <CardTitle>Próximas Manutenções</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {maintenanceStats.map((item, index) => (
-                <div key={item.tool} className="p-3 border rounded-lg">
+              {maintenanceMetrics?.nextDue?.map((item, index) => (
+                <div key={index} className="p-3 border rounded-lg">
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium">{item.tool}</h4>
-                    <Badge variant="secondary">{item.issues} ocorrências</Badge>
+                    <h4 className="font-medium">{item.toolName}</h4>
+                    <Badge variant={
+                      item.priority === 'high' ? 'destructive' :
+                      item.priority === 'medium' ? 'secondary' : 'outline'
+                    }>
+                      {item.priority}
+                    </Badge>
                   </div>
                   <div className="text-sm text-gray-600">
-                    <p>Tempo médio de reparo: {item.avgRepairTime}</p>
+                    <p>Vencimento: {new Date(item.dueDate).toLocaleDateString('pt-BR')}</p>
                   </div>
                   <div className="mt-2">
-                    <Progress value={(10 - item.issues) * 10} className="h-1" />
+                    <Progress 
+                      value={item.priority === 'high' ? 90 : item.priority === 'medium' ? 60 : 30} 
+                      className="h-1"
+                    />
                   </div>
                 </div>
-              ))}
+              )) || (
+                <p className="text-gray-500 text-center py-4">Nenhuma manutenção pendente</p>
+              )}
             </div>
           </CardContent>
         </Card>
