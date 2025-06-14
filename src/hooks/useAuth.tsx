@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, ReactNode } from 'react';
 import { supabase, isDemoMode } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
@@ -8,7 +9,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider = ({ children }: AuthProviderProps) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   console.log('🔄 AuthProvider rendering...');
   
   const [user, setUser] = useState<User | null>(null);
