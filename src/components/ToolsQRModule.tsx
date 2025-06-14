@@ -6,17 +6,18 @@ import { ToolsServiceInitializer } from '@/components/tools/ToolsServiceInitiali
 import { ToolsHeader } from '@/components/tools/ToolsHeader';
 import { ToolsStats } from '@/components/tools/ToolsStats';
 import { ToolsTabsContainer } from '@/components/tools/ToolsTabsContainer';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { useToolsStats } from '@/hooks/useToolsStats';
 
 const ToolsContent: React.FC = () => {
   const { stats } = useToolsStats();
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 min-h-screen">
+    <PageContainer>
       <ToolsHeader />
       <ToolsStats stats={stats} />
       <ToolsTabsContainer />
-    </div>
+    </PageContainer>
   );
 };
 

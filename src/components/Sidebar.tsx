@@ -8,8 +8,12 @@ import {
   FileText,
   Settings,
   Home,
-  QrCode
+  QrCode,
+  Database,
+  X
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useNavigation } from '@/contexts/NavigationContext';
 
 interface SidebarProps {
   activeModule: string;
@@ -17,66 +21,151 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
+  const { sidebarCollapsed, setSidebarCollapsed } = useNavigation();
+
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'masterdata', label: 'Master Data', icon: Settings },
-    { id: 'stock', label: 'Gestão de Estoque', icon: Package },
-    { id: 'tools-qr', label: 'Ferramentas QR', icon: QrCode },
-    { id: 'receiving', label: 'Recebimento', icon: TruckIcon },
-    { id: 'shipping', label: 'Expedição', icon: ShoppingCart },
-    { id: 'reports', label: 'Relatórios', icon: BarChart3 },
+    { 
+      id: 'dashboard', 
+      label: 'Dashboard', 
+      icon: Home,
+      description: 'Visão geral do sistema'
+    },
+    { 
+      id: 'masterdata', 
+      label: 'Master Data', 
+      icon: Database,
+      description: 'Gestão de dados mestres'
+    },
+    { 
+      id: 'stock', 
+      label: 'Gestão de Estoque', 
+      icon: Package,
+      description: 'Controle de inventário'
+    },
+    { 
+      id: 'tools-qr', 
+      label: 'Ferramentas QR', 
+      icon: QrCode,
+      description: 'Sistema SGF-QR'
+    },
+    { 
+      id: 'receiving', 
+      label: 'Recebimento', 
+      icon: TruckIcon,
+      description: 'Entrada de materiais'
+    },
+    { 
+      id: 'shipping', 
+      label: 'Expedição', 
+      icon: ShoppingCart,
+      description: 'Saída de materiais'
+    },
+    { 
+      id: 'reports', 
+      label: 'Relatórios', 
+      icon: BarChart3,
+      description: 'Análises e relatórios'
+    },
   ];
 
   const handleModuleClick = (moduleId: string) => {
     console.log('Sidebar: Changing module to:', moduleId);
     try {
       onModuleChange(moduleId);
+      // Update breadcrumbs based on module
+      const moduleItem = menuItems.find(item => item.id === moduleId);
+      if (moduleItem) {
+        // This will be handled by individual modules
+      }
     } catch (error) {
       console.error('Error changing module:', error);
     }
   };
 
   return (
-    <div className="w-64 bg-slate-900 text-white flex flex-col">
-      <div className="p-6 border-b border-slate-700">
-        <h1 className="text-xl font-bold text-blue-400">SIGA</h1>
-        <p className="text-sm text-slate-300 mt-1">Sistema Integrado de Gestão de Almoxarifado</p>
-      </div>
-      
-      <nav className="flex-1 p-4">
-        <div className="space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => handleModuleClick(item.id)}
-                className={cn(
-                  "w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
-                  activeModule === item.id
-                    ? "bg-blue-600 text-white shadow-lg"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                )}
-              >
-                <Icon className="h-5 w-5 flex-shrink-0" />
-                <span className="text-sm font-medium">{item.label}</span>
-              </button>
-            );
-          })}
+    <>
+      {/* Mobile Overlay */}
+      {!sidebarCollapsed && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={cn(
+        "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col transition-transform duration-300",
+        sidebarCollapsed && "-translate-x-full lg:translate-x-0"
+      )}>
+        {/* Header */}
+        <div className="p-6 border-b border-slate-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-blue-400">SIGA</h1>
+              <p className="text-sm text-slate-300 mt-1">Sistema Integrado de Gestão</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarCollapsed(true)}
+              className="lg:hidden text-white hover:bg-slate-800"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </nav>
-      
-      <div className="p-4 border-t border-slate-700">
-        <button 
-          type="button"
-          onClick={() => console.log('Settings clicked')}
-          className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
-        >
-          <Settings className="h-5 w-5" />
-          <span className="text-sm font-medium">Configurações</span>
-        </button>
+        
+        {/* Navigation */}
+        <nav className="flex-1 p-4 overflow-y-auto">
+          <div className="space-y-2">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeModule === item.id;
+              
+              return (
+                <div key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => handleModuleClick(item.id)}
+                    className={cn(
+                      "w-full group flex items-center space-x-3 px-3 py-3 rounded-lg text-left transition-all duration-200 cursor-pointer",
+                      isActive
+                        ? "bg-blue-600 text-white shadow-lg transform scale-[1.02]"
+                        : "text-slate-300 hover:bg-slate-800 hover:text-white hover:scale-[1.01]"
+                    )}
+                  >
+                    <Icon className={cn(
+                      "h-5 w-5 flex-shrink-0 transition-colors",
+                      isActive ? "text-white" : "text-slate-400 group-hover:text-white"
+                    )} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{item.label}</div>
+                      <div className={cn(
+                        "text-xs truncate transition-colors",
+                        isActive ? "text-blue-100" : "text-slate-500 group-hover:text-slate-300"
+                      )}>
+                        {item.description}
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </nav>
+        
+        {/* Footer */}
+        <div className="p-4 border-t border-slate-700">
+          <button 
+            type="button"
+            onClick={() => console.log('Settings clicked')}
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
+          >
+            <Settings className="h-5 w-5" />
+            <span className="text-sm font-medium">Configurações</span>
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
