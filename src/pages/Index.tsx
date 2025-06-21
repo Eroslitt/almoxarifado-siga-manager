@@ -10,6 +10,7 @@ import { ReceivingModule } from '@/components/ReceivingModule';
 import { ShippingModule } from '@/components/ShippingModule';
 import { ReportsModule } from '@/components/ReportsModule';
 import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
+import { AuthProvider } from '@/hooks/useAuth';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 
@@ -77,17 +78,19 @@ const IndexContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <AppHeader />
-        <main className="flex-1 overflow-auto">
-          {renderModule()}
-        </main>
+    <AuthProvider>
+      <div className="min-h-screen bg-gray-50 flex">
+        <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <AppHeader />
+          <main className="flex-1 overflow-auto">
+            {renderModule()}
+          </main>
+        </div>
+        <Toaster />
+        <Sonner />
       </div>
-      <Toaster />
-      <Sonner />
-    </div>
+    </AuthProvider>
   );
 };
 
