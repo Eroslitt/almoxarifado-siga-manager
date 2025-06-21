@@ -12,11 +12,11 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   console.log('🔄 AuthProvider rendering...');
   
-  const [user, setUser] = useState<User | null>(null);
-  const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [supabaseUser, setSupabaseUser] = React.useState<SupabaseUser | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const initAuth = async () => {
       try {
         if (isDemoMode) {
