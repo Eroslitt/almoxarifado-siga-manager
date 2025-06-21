@@ -10,6 +10,8 @@ import { ReceivingModule } from '@/components/ReceivingModule';
 import { ShippingModule } from '@/components/ShippingModule';
 import { ReportsModule } from '@/components/ReportsModule';
 import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as Sonner } from '@/components/ui/sonner';
 
 const IndexContent = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -83,6 +85,8 @@ const IndexContent = () => {
           {renderModule()}
         </main>
       </div>
+      <Toaster />
+      <Sonner />
     </div>
   );
 };
