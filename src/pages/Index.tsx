@@ -10,7 +10,7 @@ import { ReceivingModule } from '@/components/ReceivingModule';
 import { ShippingModule } from '@/components/ShippingModule';
 import { ReportsModule } from '@/components/ReportsModule';
 import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
-import { AuthProvider } from '@/hooks/useAuth';
+import { AuthProvider } from '@/components/AuthProvider';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 
