@@ -9,6 +9,10 @@ import { ToolsQRModule } from '@/components/ToolsQRModule';
 import { ReceivingModule } from '@/components/ReceivingModule';
 import { ShippingModule } from '@/components/ShippingModule';
 import { ReportsModule } from '@/components/ReportsModule';
+import { AdvancedNotificationCenter } from '@/components/notifications/AdvancedNotificationCenter';
+import { GlobalSearch } from '@/components/search/GlobalSearch';
+import { PersonalizedDashboard } from '@/components/dashboard/PersonalizedDashboard';
+import { AIAnalyticsDashboard } from '@/components/analytics/AIAnalyticsDashboard';
 import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
 import { AuthProvider } from '@/components/AuthProvider';
 import { Toaster } from '@/components/ui/toaster';
@@ -24,6 +28,12 @@ const IndexContent = () => {
       switch (activeModule) {
         case 'dashboard':
           setBreadcrumbs([]);
+          break;
+        case 'personalized-dashboard':
+          setBreadcrumbs([{ label: 'Dashboard Personalizado', path: '/personalized-dashboard' }]);
+          break;
+        case 'ai-analytics':
+          setBreadcrumbs([{ label: 'Analytics IA', path: '/ai-analytics' }]);
           break;
         case 'masterdata':
           setBreadcrumbs([{ label: 'Master Data', path: '/masterdata' }]);
@@ -60,6 +70,10 @@ const IndexContent = () => {
     switch (activeModule) {
       case 'dashboard':
         return <Dashboard />;
+      case 'personalized-dashboard':
+        return <PersonalizedDashboard />;
+      case 'ai-analytics':
+        return <AIAnalyticsDashboard />;
       case 'masterdata':
         return <MasterDataModule />;
       case 'stock':
@@ -82,7 +96,14 @@ const IndexContent = () => {
       <div className="min-h-screen bg-gray-50 flex">
         <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
         <div className="flex-1 flex flex-col min-w-0">
-          <AppHeader />
+          <AppHeader>
+            <div className="flex items-center gap-4 flex-1 max-w-2xl mx-auto">
+              <GlobalSearch />
+            </div>
+            <div className="flex items-center gap-2">
+              <AdvancedNotificationCenter />
+            </div>
+          </AppHeader>
           <main className="flex-1 overflow-auto">
             {renderModule()}
           </main>
