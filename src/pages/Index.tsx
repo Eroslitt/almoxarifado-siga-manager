@@ -13,6 +13,7 @@ import { AdvancedNotificationCenter } from '@/components/notifications/AdvancedN
 import { GlobalSearch } from '@/components/search/GlobalSearch';
 import { PersonalizedDashboard } from '@/components/dashboard/PersonalizedDashboard';
 import { AIAnalyticsDashboard } from '@/components/analytics/AIAnalyticsDashboard';
+import { PerformanceMonitor } from '@/components/system/PerformanceMonitor';
 import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
 import { AuthProvider } from '@/components/AuthProvider';
 import { Toaster } from '@/components/ui/toaster';
@@ -34,6 +35,9 @@ const IndexContent = () => {
           break;
         case 'ai-analytics':
           setBreadcrumbs([{ label: 'Analytics IA', path: '/ai-analytics' }]);
+          break;
+        case 'performance-monitor':
+          setBreadcrumbs([{ label: 'Monitor de Performance', path: '/performance-monitor' }]);
           break;
         case 'masterdata':
           setBreadcrumbs([{ label: 'Master Data', path: '/masterdata' }]);
@@ -74,6 +78,8 @@ const IndexContent = () => {
         return <PersonalizedDashboard />;
       case 'ai-analytics':
         return <AIAnalyticsDashboard />;
+      case 'performance-monitor':
+        return <PerformanceMonitor />;
       case 'masterdata':
         return <MasterDataModule />;
       case 'stock':
@@ -96,14 +102,16 @@ const IndexContent = () => {
       <div className="min-h-screen bg-gray-50 flex">
         <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
         <div className="flex-1 flex flex-col min-w-0">
-          <AppHeader>
-            <div className="flex items-center gap-4 flex-1 max-w-2xl mx-auto">
-              <GlobalSearch />
+          <div className="border-b bg-white px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4 flex-1 max-w-2xl">
+                <GlobalSearch />
+              </div>
+              <div className="flex items-center gap-2">
+                <AdvancedNotificationCenter />
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <AdvancedNotificationCenter />
-            </div>
-          </AppHeader>
+          </div>
           <main className="flex-1 overflow-auto">
             {renderModule()}
           </main>

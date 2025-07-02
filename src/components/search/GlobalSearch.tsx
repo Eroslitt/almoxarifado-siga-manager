@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Mic, Camera, Filter, History, Trending, X } from 'lucide-react';
+import { Search, Mic, Camera, Filter, History, TrendingUp, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -288,7 +287,7 @@ export const GlobalSearch: React.FC = () => {
 
                   <div>
                     <div className="flex items-center mb-2">
-                      <Trending className="h-4 w-4 mr-2 text-gray-400" />
+                      <TrendingUp className="h-4 w-4 mr-2 text-gray-400" />
                       <span className="text-sm font-medium text-gray-600">Tendências</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
