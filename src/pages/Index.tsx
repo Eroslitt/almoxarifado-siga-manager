@@ -14,6 +14,10 @@ import { GlobalSearch } from '@/components/search/GlobalSearch';
 import { PersonalizedDashboard } from '@/components/dashboard/PersonalizedDashboard';
 import { AIAnalyticsDashboard } from '@/components/analytics/AIAnalyticsDashboard';
 import { PerformanceMonitor } from '@/components/system/PerformanceMonitor';
+import { APIManager } from '@/components/integration/APIManager';
+import { SecurityDashboard } from '@/components/security/SecurityDashboard';
+import { PWAInstaller } from '@/components/mobile/PWAInstaller';
+import { AccessibilityMenu } from '@/components/accessibility/AccessibilityMenu';
 import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
 import { AuthProvider } from '@/components/AuthProvider';
 import { Toaster } from '@/components/ui/toaster';
@@ -38,6 +42,12 @@ const IndexContent = () => {
           break;
         case 'performance-monitor':
           setBreadcrumbs([{ label: 'Monitor de Performance', path: '/performance-monitor' }]);
+          break;
+        case 'api-manager':
+          setBreadcrumbs([{ label: 'Gerenciamento de APIs', path: '/api-manager' }]);
+          break;
+        case 'security-dashboard':
+          setBreadcrumbs([{ label: 'Dashboard de Segurança', path: '/security-dashboard' }]);
           break;
         case 'masterdata':
           setBreadcrumbs([{ label: 'Master Data', path: '/masterdata' }]);
@@ -80,6 +90,10 @@ const IndexContent = () => {
         return <AIAnalyticsDashboard />;
       case 'performance-monitor':
         return <PerformanceMonitor />;
+      case 'api-manager':
+        return <APIManager />;
+      case 'security-dashboard':
+        return <SecurityDashboard />;
       case 'masterdata':
         return <MasterDataModule />;
       case 'stock':
@@ -116,6 +130,8 @@ const IndexContent = () => {
             {renderModule()}
           </main>
         </div>
+        <PWAInstaller />
+        <AccessibilityMenu />
         <Toaster />
         <Sonner />
       </div>
