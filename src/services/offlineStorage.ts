@@ -1,4 +1,3 @@
-
 import { openDB, IDBPDatabase } from 'idb';
 
 interface OfflineData {
@@ -61,7 +60,12 @@ class OfflineStorageService {
     await this.init();
     if (!this.db) throw new Error('Database not initialized');
 
-    return await this.db.getAllFromIndex('offline_data', 'synced', false);
+    const tx = this.db.transaction('offline_data', 'readonly');
+    const index = tx.store.index('synced');
+    const unsyncedData = await index.getAll(IDBKeyRange.only(false));
+    await tx.done;
+    
+    return unsyncedData;
   }
 
   async markAsSynced(id: string): Promise<void> {
