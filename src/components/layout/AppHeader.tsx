@@ -1,5 +1,5 @@
 
-import { Bell, User, Settings, LogOut, Menu } from 'lucide-react';
+import { Bell, Folder, Settings, ArrowUp, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -31,7 +31,7 @@ export const AppHeader = () => {
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="lg:hidden"
         >
-          <Menu className="h-5 w-5" />
+          <List className="h-5 w-5" />
         </Button>
         <Breadcrumbs />
       </div>
@@ -48,7 +48,7 @@ export const AppHeader = () => {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <User className="h-4 w-4 text-white" />
+                <Folder className="h-4 w-4 text-white" />
               </div>
               <div className="hidden md:block text-left">
                 <div className="text-sm font-medium">{user?.name || 'Demo User'}</div>
@@ -60,7 +60,7 @@ export const AppHeader = () => {
             <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
+              <Folder className="mr-2 h-4 w-4" />
               <span>Perfil</span>
             </DropdownMenuItem>
             <DropdownMenuItem>
@@ -69,7 +69,7 @@ export const AppHeader = () => {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
+              <ArrowUp className="mr-2 h-4 w-4" />
               <span>Sair</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

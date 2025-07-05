@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Mic, Camera, Filter, History, TrendingUp, X } from 'lucide-react';
+import { Search, List, Settings, Folder, TrendingUp, X, Bell, Image } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -203,10 +203,10 @@ export const GlobalSearch: React.FC = () => {
             onClick={startVoiceSearch}
             className={`h-7 w-7 p-0 ${isListening ? 'text-red-500' : ''}`}
           >
-            <Mic className="h-4 w-4" />
+            <Bell className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-            <Camera className="h-4 w-4" />
+            <Image className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
@@ -214,7 +214,7 @@ export const GlobalSearch: React.FC = () => {
             onClick={() => setShowFilters(!showFilters)}
             className="h-7 w-7 p-0"
           >
-            <Filter className="h-4 w-4" />
+            <Settings className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -263,7 +263,7 @@ export const GlobalSearch: React.FC = () => {
                 <div className="p-4">
                   <div className="mb-4">
                     <div className="flex items-center mb-2">
-                      <History className="h-4 w-4 mr-2 text-gray-400" />
+                      <List className="h-4 w-4 mr-2 text-gray-400" />
                       <span className="text-sm font-medium text-gray-600">Buscas recentes</span>
                     </div>
                     <div className="flex flex-wrap gap-2">

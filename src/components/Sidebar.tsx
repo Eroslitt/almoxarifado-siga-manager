@@ -1,15 +1,15 @@
 
 import { cn } from '@/lib/utils';
 import { 
-  BarChart3, 
-  Package, 
-  TruckIcon, 
-  ShoppingCart, 
-  FileText,
+  TrendingUp, 
+  Folder, 
+  ArrowUp, 
+  FolderPlus, 
+  FilePlus,
   Settings,
-  Home,
-  QrCode,
-  Database,
+  FolderMinus,
+  Search,
+  FolderX,
   X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,43 +27,43 @@ export const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
     { 
       id: 'dashboard', 
       label: 'Dashboard', 
-      icon: Home,
+      icon: FolderMinus,
       description: 'Visão geral do sistema'
     },
     { 
       id: 'masterdata', 
       label: 'Master Data', 
-      icon: Database,
+      icon: FolderX,
       description: 'Gestão de dados mestres'
     },
     { 
       id: 'stock', 
       label: 'Gestão de Estoque', 
-      icon: Package,
+      icon: Folder,
       description: 'Controle de inventário'
     },
     { 
       id: 'tools-qr', 
       label: 'Ferramentas QR', 
-      icon: QrCode,
+      icon: Search,
       description: 'Sistema SGF-QR'
     },
     { 
       id: 'receiving', 
       label: 'Recebimento', 
-      icon: TruckIcon,
+      icon: ArrowUp,
       description: 'Entrada de materiais'
     },
     { 
       id: 'shipping', 
       label: 'Expedição', 
-      icon: ShoppingCart,
+      icon: FolderPlus,
       description: 'Saída de materiais'
     },
     { 
       id: 'reports', 
       label: 'Relatórios', 
-      icon: BarChart3,
+      icon: TrendingUp,
       description: 'Análises e relatórios'
     },
   ];
