@@ -1,3 +1,4 @@
 
-export { useAuth } from '@/contexts/AuthContext';
-export { AuthProvider } from '@/components/AuthProvider';
+import { useAuth } from '@/contexts/AuthContext';
+
+export { useAuth };

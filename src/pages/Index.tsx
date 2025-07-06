@@ -12,12 +12,15 @@ import { ShippingModule } from '@/components/ShippingModule';
 import { ReportsModule } from '@/components/ReportsModule';
 import { MoreOptionsModule } from '@/components/MoreOptionsModule';
 import { AdvancedNotificationCenter } from '@/components/notifications/AdvancedNotificationCenter';
-import { GlobalSearch } from '@/components/search/GlobalSearch';
+import { GlobalSearchV2 } from '@/components/search/GlobalSearchV2';
 import { PersonalizedDashboard } from '@/components/dashboard/PersonalizedDashboard';
 import { AIAnalyticsDashboard } from '@/components/analytics/AIAnalyticsDashboard';
 import { PerformanceMonitor } from '@/components/system/PerformanceMonitor';
 import { APIManager } from '@/components/integration/APIManager';
 import { SecurityDashboard } from '@/components/security/SecurityDashboard';
+import { RealTimeAnalyticsDashboard } from '@/components/analytics/RealTimeAnalyticsDashboard';
+import { WorkflowManager } from '@/components/workflow/WorkflowManager';
+import { ConnectorHub } from '@/components/integration/ConnectorHub';
 import { PWAInstaller } from '@/components/mobile/PWAInstaller';
 import { AccessibilityMenu } from '@/components/accessibility/AccessibilityMenu';
 import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
@@ -47,6 +50,15 @@ const IndexContent = () => {
           break;
         case 'ai-analytics':
           setBreadcrumbs([{ label: 'Analytics IA', path: '/ai-analytics' }]);
+          break;
+        case 'realtime-analytics':
+          setBreadcrumbs([{ label: 'Analytics Tempo Real', path: '/realtime-analytics' }]);
+          break;
+        case 'workflow-manager':
+          setBreadcrumbs([{ label: 'Gestão de Workflows', path: '/workflow-manager' }]);
+          break;
+        case 'connector-hub':
+          setBreadcrumbs([{ label: 'Hub de Conectores', path: '/connector-hub' }]);
           break;
         case 'performance-monitor':
           setBreadcrumbs([{ label: 'Monitor de Performance', path: '/performance-monitor' }]);
@@ -98,6 +110,12 @@ const IndexContent = () => {
         return <PersonalizedDashboard />;
       case 'ai-analytics':
         return <AIAnalyticsDashboard />;
+      case 'realtime-analytics':
+        return <RealTimeAnalyticsDashboard />;
+      case 'workflow-manager':
+        return <WorkflowManager />;
+      case 'connector-hub':
+        return <ConnectorHub />;
       case 'performance-monitor':
         return <PerformanceMonitor />;
       case 'api-manager':
@@ -150,7 +168,7 @@ const IndexContent = () => {
           <div className="border-b bg-white px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 flex-1 max-w-2xl">
-                <GlobalSearch />
+                <GlobalSearchV2 />
               </div>
               <div className="flex items-center gap-2">
                 <AdvancedNotificationCenter />

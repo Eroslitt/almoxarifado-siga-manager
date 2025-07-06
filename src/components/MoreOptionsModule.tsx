@@ -1,13 +1,13 @@
+
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
-  Settings, 
-  FolderMinus, 
   TrendingUp, 
   Search,
   Bell,
-  Folder
+  Package,
+  User
 } from 'lucide-react';
 
 interface MoreOptionsModuleProps {
@@ -20,7 +20,7 @@ export const MoreOptionsModule = ({ onModuleChange }: MoreOptionsModuleProps) =>
       id: 'personalized-dashboard',
       title: 'Dashboard Personalizado',
       description: 'Customize sua visualização',
-      icon: FolderMinus,
+      icon: Package,
       color: 'text-blue-600'
     },
     {
@@ -29,6 +29,27 @@ export const MoreOptionsModule = ({ onModuleChange }: MoreOptionsModuleProps) =>
       description: 'Análises inteligentes',
       icon: TrendingUp,
       color: 'text-purple-600'
+    },
+    {
+      id: 'realtime-analytics',
+      title: 'Analytics Tempo Real',
+      description: 'Monitoramento em tempo real',
+      icon: TrendingUp,
+      color: 'text-green-600'
+    },
+    {
+      id: 'workflow-manager',
+      title: 'Gestão de Workflows',
+      description: 'Controle de processos e aprovações',
+      icon: Search,
+      color: 'text-orange-600'
+    },
+    {
+      id: 'connector-hub',
+      title: 'Hub de Conectores',
+      description: 'Integrações com sistemas externos',
+      icon: Package,
+      color: 'text-cyan-600'
     },
     {
       id: 'performance-monitor',
@@ -41,7 +62,7 @@ export const MoreOptionsModule = ({ onModuleChange }: MoreOptionsModuleProps) =>
       id: 'api-manager',
       title: 'Gerenciamento de APIs',
       description: 'Gerencie suas integrações',
-      icon: Settings,
+      icon: Search,
       color: 'text-orange-600'
     },
     {
@@ -55,7 +76,7 @@ export const MoreOptionsModule = ({ onModuleChange }: MoreOptionsModuleProps) =>
       id: 'masterdata',
       title: 'Master Data Avançado',
       description: 'Configurações avançadas',
-      icon: Folder,
+      icon: Package,
       color: 'text-indigo-600'
     }
   ];
