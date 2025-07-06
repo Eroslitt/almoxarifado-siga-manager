@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Dashboard } from '@/components/Dashboard';
 import { MasterDataModule } from '@/components/MasterDataModule';
 import { StockModule } from '@/components/StockModule';
@@ -9,6 +10,7 @@ import { ToolsQRModule } from '@/components/ToolsQRModule';
 import { ReceivingModule } from '@/components/ReceivingModule';
 import { ShippingModule } from '@/components/ShippingModule';
 import { ReportsModule } from '@/components/ReportsModule';
+import { MoreOptionsModule } from '@/components/MoreOptionsModule';
 import { AdvancedNotificationCenter } from '@/components/notifications/AdvancedNotificationCenter';
 import { GlobalSearch } from '@/components/search/GlobalSearch';
 import { PersonalizedDashboard } from '@/components/dashboard/PersonalizedDashboard';
@@ -20,12 +22,15 @@ import { PWAInstaller } from '@/components/mobile/PWAInstaller';
 import { AccessibilityMenu } from '@/components/accessibility/AccessibilityMenu';
 import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
 import { AuthProvider } from '@/components/AuthProvider';
+import { ViewportProvider } from '@/components/ui/viewport-provider';
+import { useMobile } from '@/hooks/use-mobile';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 
 const IndexContent = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
   const { setSidebarCollapsed, setBreadcrumbs } = useNavigation();
+  const isMobile = useMobile();
 
   useEffect(() => {
     // Update breadcrumbs when module changes
@@ -33,6 +38,9 @@ const IndexContent = () => {
       switch (activeModule) {
         case 'dashboard':
           setBreadcrumbs([]);
+          break;
+        case 'more':
+          setBreadcrumbs([{ label: 'Mais Opções', path: '/more' }]);
           break;
         case 'personalized-dashboard':
           setBreadcrumbs([{ label: 'Dashboard Personalizado', path: '/personalized-dashboard' }]);
@@ -84,6 +92,8 @@ const IndexContent = () => {
     switch (activeModule) {
       case 'dashboard':
         return <Dashboard />;
+      case 'more':
+        return <MoreOptionsModule onModuleChange={handleModuleChange} />;
       case 'personalized-dashboard':
         return <PersonalizedDashboard />;
       case 'ai-analytics':
@@ -111,6 +121,27 @@ const IndexContent = () => {
     }
   };
 
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <AuthProvider>
+        <ViewportProvider>
+          <MobileLayout 
+            activeModule={activeModule}
+            onModuleChange={handleModuleChange}
+          >
+            {renderModule()}
+          </MobileLayout>
+          <PWAInstaller />
+          <AccessibilityMenu />
+          <Toaster />
+          <Sonner />
+        </ViewportProvider>
+      </AuthProvider>
+    );
+  }
+
+  // Desktop Layout
   return (
     <AuthProvider>
       <div className="min-h-screen bg-gray-50 flex">
