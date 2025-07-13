@@ -11,8 +11,17 @@ import {
   AlertCircle,
   TrendingUp
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export const ToolsOverview = () => {
+  const { toast } = useToast();
+
+  const handleViewDetails = (tool: any) => {
+    toast({
+      title: `Detalhes - ${tool.name}`,
+      description: `ID: ${tool.id} | Usuário: ${tool.user} (${tool.department}) | Em uso desde ${tool.since} há ${tool.duration}`,
+    });
+  };
   const currentlyInUse = [
     {
       id: 'FER-08172',
@@ -103,7 +112,7 @@ export const ToolsOverview = () => {
                       Atrasado
                     </Badge>
                   )}
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => handleViewDetails(tool)}>
                     <Eye className="h-4 w-4 mr-1" />
                     Detalhes
                   </Button>
