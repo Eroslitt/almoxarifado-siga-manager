@@ -340,6 +340,107 @@ export type Database = {
         }
         Relationships: []
       }
+      skus: {
+        Row: {
+          category: string
+          classification: string | null
+          created_at: string
+          current_stock: number
+          description: string | null
+          id: string
+          last_movement_date: string | null
+          location: string | null
+          max_stock: number
+          min_stock: number
+          name: string
+          sku_code: string
+          status: string | null
+          unit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          classification?: string | null
+          created_at?: string
+          current_stock?: number
+          description?: string | null
+          id?: string
+          last_movement_date?: string | null
+          location?: string | null
+          max_stock?: number
+          min_stock?: number
+          name: string
+          sku_code: string
+          status?: string | null
+          unit?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          classification?: string | null
+          created_at?: string
+          current_stock?: number
+          description?: string | null
+          id?: string
+          last_movement_date?: string | null
+          location?: string | null
+          max_stock?: number
+          min_stock?: number
+          name?: string
+          sku_code?: string
+          status?: string | null
+          unit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      stock_movements: {
+        Row: {
+          created_at: string
+          id: string
+          movement_type: string
+          notes: string | null
+          quantity: number
+          reference_document: string | null
+          sku_id: string
+          unit_cost: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          movement_type: string
+          notes?: string | null
+          quantity: number
+          reference_document?: string | null
+          sku_id: string
+          unit_cost?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          movement_type?: string
+          notes?: string | null
+          quantity?: number
+          reference_document?: string | null
+          sku_id?: string
+          unit_cost?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_sku_id_fkey"
+            columns: ["sku_id"]
+            isOneToOne: false
+            referencedRelation: "skus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           amount: number

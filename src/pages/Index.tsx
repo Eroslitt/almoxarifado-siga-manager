@@ -29,15 +29,28 @@ import { PWAInstaller } from '@/components/mobile/PWAInstaller';
 import { AccessibilityMenu } from '@/components/accessibility/AccessibilityMenu';
 import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
 import { AuthProvider } from '@/components/AuthProvider';
+import { AuthButton } from '@/components/AuthButton';
 import { ViewportProvider } from '@/components/ui/viewport-provider';
 import { useMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 
 const IndexContent = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const { setSidebarCollapsed, setBreadcrumbs } = useNavigation();
   const isMobile = useMobile();
+
+  useEffect(() => {
+    getCurrentUser();
+  }, []);
+
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUser(user);
+  };
 
   useEffect(() => {
     // Update breadcrumbs when module changes
@@ -195,6 +208,7 @@ const IndexContent = () => {
                 <GlobalSearchV2 />
               </div>
               <div className="flex items-center gap-2">
+                <AuthButton user={currentUser} onAuthChange={getCurrentUser} />
                 <AdvancedNotificationCenter />
               </div>
             </div>
