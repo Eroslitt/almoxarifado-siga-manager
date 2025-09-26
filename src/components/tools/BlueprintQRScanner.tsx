@@ -184,8 +184,8 @@ export const BlueprintQRScanner = () => {
                 <User className="h-5 w-5 text-blue-600" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-blue-900 truncate">{user.full_name || user.email}</h3>
-                <p className="text-sm text-blue-700 truncate">ID: {user.id} • {user.company_name || 'SIGA'}</p>
+                <h3 className="font-semibold text-blue-900 truncate">{user.name}</h3>
+                <p className="text-sm text-blue-700 truncate">ID: {user.id} • {user.department}</p>
               </div>
             </div>
             <Badge className="bg-green-100 text-green-800 self-start sm:self-auto">Conectado</Badge>

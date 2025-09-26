@@ -1,6 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { MobileLayout } from '@/components/layout/MobileLayout';
@@ -32,22 +31,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 
 const IndexContent = () => {
-  const { user, loading } = useAuth();
   const [activeModule, setActiveModule] = useState('dashboard');
-
-  // Redirect if not authenticated or no subscription
-  useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        window.location.href = '/auth';
-        return;
-      }
-      if (user.subscription_status !== 'active') {
-        window.location.href = '/pricing';
-        return;
-      }
-    }
-  }, [user, loading]);
   const { setSidebarCollapsed, setBreadcrumbs } = useNavigation();
   const isMobile = useMobile();
 

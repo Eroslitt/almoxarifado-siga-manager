@@ -51,8 +51,8 @@ export const AppHeader = () => {
                 <Folder className="h-4 w-4 text-white" />
               </div>
               <div className="hidden md:block text-left">
-                <div className="text-sm font-medium">{user?.full_name || user?.email || 'Demo User'}</div>
-                <div className="text-xs text-gray-500">{user?.company_name || 'SIGA'}</div>
+                <div className="text-sm font-medium">{user?.name || 'Demo User'}</div>
+                <div className="text-xs text-gray-500">{user?.department || 'Almoxarifado'}</div>
               </div>
             </Button>
           </DropdownMenuTrigger>
