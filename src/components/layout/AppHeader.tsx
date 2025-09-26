@@ -63,6 +63,10 @@ export const AppHeader = () => {
               <Folder className="mr-2 h-4 w-4" />
               <span>Perfil</span>
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.location.href = '/subscription'}>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Assinatura</span>
+            </DropdownMenuItem>
             <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4" />
               <span>Configurações</span>
