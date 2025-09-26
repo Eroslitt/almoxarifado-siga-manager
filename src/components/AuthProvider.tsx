@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { supabase, isDemoMode } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import { isDemoMode } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { User } from '@/types/database';
 import { AuthContext } from '@/contexts/AuthContext';

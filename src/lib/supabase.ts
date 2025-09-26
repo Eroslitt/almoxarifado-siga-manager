@@ -3,15 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database';
 
 // Fallback values for development/demo
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://demo.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'demo-key';
+const supabaseUrl = "https://ckgbnibsdlmyjaylmzjo.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrZ2JuaWJzZGxteWpheWxtempvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MDAzOTksImV4cCI6MjA3NDQ3NjM5OX0.M9hihUaIzSvCYjoDDUVRg7cFhFzH6bvvrEdta7JvD9o";
 
-// Check if we're using demo values
-const isDemo = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (isDemo) {
-  console.warn('⚠️ Using demo Supabase configuration. All API calls will use mock data.');
-}
+// Check if we're using demo values - for now, always use real Supabase
+const isDemo = false;
 
 // Mock user data for demo mode
 const mockUser = {
@@ -162,8 +158,14 @@ const createMockClient = () => {
   return mockClient;
 };
 
-// Create the client with proper typing
-const realClient = createClient<Database>(supabaseUrl, supabaseAnonKey);
+// Create the client with proper typing and auth configuration
+const realClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: localStorage,
+    persistSession: true,
+    autoRefreshToken: true,
+  }
+});
 const mockClient = createMockClient();
 
 // Use type assertion to resolve the TypeScript conversion error
@@ -172,4 +174,4 @@ export const supabase = isDemo ? (mockClient as any) : realClient;
 export const isDemoMode = isDemo;
 
 // Log system status
-console.log(`🔌 Sistema: ${isDemo ? 'MODO DEMO - Dados Mock' : 'CONECTADO - Supabase'}`);
+console.log(`🔌 Sistema: CONECTADO - Supabase Real`);

@@ -33,7 +33,7 @@ import { AuthButton } from '@/components/AuthButton';
 import { ViewportProvider } from '@/components/ui/viewport-provider';
 import { useMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 
