@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Package, Clock, CheckCircle, XCircle, AlertTriangle, Trash2, Edit3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AuthBanner } from '@/components/AuthBanner';
 import { supabase } from '@/integrations/supabase/client';
 import { useMobile } from '@/hooks/use-mobile';
 
@@ -42,6 +43,7 @@ interface MaterialRequest {
 
 export const MaterialRequestModule = () => {
   const [requests, setRequests] = useState<MaterialRequest[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [newRequest, setNewRequest] = useState({
     requester_name: '',
     department: '',
@@ -62,8 +64,14 @@ export const MaterialRequestModule = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    getCurrentUser();
     loadRequests();
   }, []);
+
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUser(user);
+  };
 
   const loadRequests = async () => {
     try {

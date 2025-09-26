@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, FileText, Camera, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AuthBanner } from '@/components/AuthBanner';
 import { supabase } from '@/integrations/supabase/client';
 
 interface MaterialVerification {
@@ -31,6 +32,7 @@ interface MaterialVerification {
 
 export const MaterialVerificationModule = () => {
   const [verifications, setVerifications] = useState<MaterialVerification[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [newVerification, setNewVerification] = useState({
     material_name: '',
     supplier: '',
@@ -50,6 +52,38 @@ export const MaterialVerificationModule = () => {
   const [isSignatureMode, setIsSignatureMode] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    getCurrentUser();
+    loadVerifications();
+  }, []);
+
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUser(user);
+  };
+
+  const loadVerifications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('material_verifications')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setVerifications(data?.map(item => ({
+        ...item,
+        verification_status: item.verification_status as 'pending' | 'approved' | 'rejected'
+      })) || []);
+    } catch (error) {
+      console.error('Error loading verifications:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar verificações",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleInputChange = (field: string, value: any) => {
     setNewVerification(prev => ({

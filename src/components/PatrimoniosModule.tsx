@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, QrCode, Edit3, Trash2, Package, Tag, Printer } from 'lucide-react';
 import { toast } from 'sonner';
+import { AuthBanner } from '@/components/AuthBanner';
 import { supabase } from '@/integrations/supabase/client';
 import QRCode from 'qrcode';
 
@@ -37,6 +38,7 @@ interface Patrimonio {
 
 const PatrimoniosModule = () => {
   const [patrimonios, setPatrimonios] = useState<Patrimonio[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPatrimonio, setEditingPatrimonio] = useState<Patrimonio | null>(null);
@@ -82,8 +84,14 @@ const PatrimoniosModule = () => {
   ];
 
   useEffect(() => {
+    getCurrentUser();
     fetchPatrimonios();
   }, []);
+
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUser(user);
+  };
 
   const fetchPatrimonios = async () => {
     try {
@@ -324,6 +332,7 @@ const PatrimoniosModule = () => {
 
   return (
     <div className="space-y-6">
+      <AuthBanner user={currentUser} onAuthChange={getCurrentUser} />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-2">
           <Package className="h-6 w-6 text-primary" />
