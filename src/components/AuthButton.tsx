@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, UserPlus, LogOut, User } from 'lucide-react';
@@ -24,24 +24,34 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔵 handleSignIn chamado', { email, password: password ? '****' : 'vazio' });
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('🔵 Tentando fazer login...');
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      console.log('🔵 Resposta do login:', { data: data?.user?.email, error: error?.message });
 
+      if (error) {
+        console.error('🔴 Erro no login:', error);
+        throw error;
+      }
+
+      console.log('✅ Login bem-sucedido');
       toast({
         title: "Sucesso!",
         description: "Login realizado com sucesso.",
       });
 
       setIsOpen(false);
+      resetForm();
       onAuthChange();
     } catch (error: any) {
+      console.error('🔴 Erro capturado no login:', error);
       toast({
         title: "Erro no login",
         description: error.message || "Erro ao fazer login",
@@ -54,10 +64,11 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🟡 handleSignUp chamado', { email, fullName, password: password ? '****' : 'vazio' });
     setIsLoading(true);
 
     try {
-      console.log('Tentando criar conta para:', email);
+      console.log('🟡 Tentando criar conta...');
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -70,12 +81,18 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
         }
       });
 
+      console.log('🟡 Resposta do signup:', { 
+        user: data.user?.email, 
+        needsConfirmation: !data.user?.email_confirmed_at,
+        error: error?.message 
+      });
+
       if (error) {
-        console.error('Erro no signup:', error);
+        console.error('🔴 Erro no signup:', error);
         throw error;
       }
 
-      console.log('Signup response:', data);
+      console.log('✅ Signup bem-sucedido');
 
       if (data.user && !data.user.email_confirmed_at) {
         toast({
@@ -93,11 +110,10 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
       setIsOpen(false);
       resetForm();
     } catch (error: any) {
-      console.error('Erro no cadastro:', error);
+      console.error('🔴 Erro capturado no cadastro:', error);
       
       let errorMessage = error.message || "Erro ao criar conta";
       
-      // Handle specific Supabase errors
       if (error.message?.includes('User already registered')) {
         errorMessage = "Este email já está cadastrado. Tente fazer login.";
       } else if (error.message?.includes('Password should be at least')) {
@@ -137,6 +153,7 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
   };
 
   const resetForm = () => {
+    console.log('🔄 Resetando formulário');
     setEmail('');
     setPassword('');
     setFullName('');
@@ -171,9 +188,12 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Acesso ao Sistema</DialogTitle>
+            <DialogDescription>
+              Entre com sua conta ou crie uma nova conta para acessar o sistema.
+            </DialogDescription>
           </DialogHeader>
 
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs defaultValue="signin" className="w-full" onValueChange={(value) => console.log('🔄 Tab changed to:', value)}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Entrar</TabsTrigger>
               <TabsTrigger value="signup">Cadastrar</TabsTrigger>
@@ -208,7 +228,11 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
                         placeholder="••••••••"
                       />
                     </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      disabled={isLoading}
+                    >
                       {isLoading ? 'Entrando...' : 'Entrar'}
                     </Button>
                   </form>
@@ -256,7 +280,11 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
                         minLength={6}
                       />
                     </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      disabled={isLoading}
+                    >
                       {isLoading ? 'Criando...' : 'Criar Conta'}
                     </Button>
                   </form>
