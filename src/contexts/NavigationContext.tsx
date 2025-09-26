@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import * as React from 'react';
 
 interface NavigationContextType {
   activeModule: string;
@@ -10,16 +10,16 @@ interface NavigationContextType {
   setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
-const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
+const NavigationContext = React.createContext<NavigationContextType | undefined>(undefined);
 
 interface NavigationProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children }) => {
-  const [activeModule, setActiveModule] = useState('dashboard');
-  const [breadcrumbs, setBreadcrumbs] = useState<Array<{ label: string; path: string }>>([]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeModule, setActiveModule] = React.useState('dashboard');
+  const [breadcrumbs, setBreadcrumbs] = React.useState<Array<{ label: string; path: string }>>([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
 
   const value = {
     activeModule,
@@ -38,7 +38,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
 };
 
 export const useNavigation = () => {
-  const context = useContext(NavigationContext);
+  const context = React.useContext(NavigationContext);
   if (!context) {
     throw new Error('useNavigation deve ser usado dentro de um NavigationProvider');
   }
