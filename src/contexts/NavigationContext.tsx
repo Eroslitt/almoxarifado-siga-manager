@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, ReactNode, useState } from 'react';
+import { createContext, useContext, type ReactNode, useState } from 'react';
 
 interface NavigationContextType {
   activeModule: string;
@@ -16,7 +16,7 @@ interface NavigationProviderProps {
   children: ReactNode;
 }
 
-export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children }) => {
+export function NavigationProvider({ children }: NavigationProviderProps) {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [breadcrumbs, setBreadcrumbs] = useState<Array<{ label: string; path: string }>>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
