@@ -13,6 +13,7 @@ import { ReportsModule } from '@/components/ReportsModule';
 import { MoreOptionsModule } from '@/components/MoreOptionsModule';
 import { MaterialVerificationModule } from '@/components/MaterialVerificationModule';
 import { EPIControlModule } from '@/components/EPIControlModule';
+import { MaterialRequestModule } from '@/components/MaterialRequestModule';
 import { AdvancedNotificationCenter } from '@/components/notifications/AdvancedNotificationCenter';
 import { GlobalSearchV2 } from '@/components/search/GlobalSearchV2';
 import { PersonalizedDashboard } from '@/components/dashboard/PersonalizedDashboard';
@@ -95,6 +96,9 @@ const IndexContent = () => {
         case 'epi-control':
           setBreadcrumbs([{ label: 'Controle de EPIs', path: '/epi-control' }]);
           break;
+        case 'material-request':
+          setBreadcrumbs([{ label: 'Requisição de Materiais', path: '/material-request' }]);
+          break;
         default:
           setBreadcrumbs([]);
       }
@@ -146,6 +150,8 @@ const IndexContent = () => {
         return <MaterialVerificationModule />;
       case 'epi-control':
         return <EPIControlModule />;
+      case 'material-request':
+        return <MaterialRequestModule />;
       default:
         return <Dashboard />;
     }

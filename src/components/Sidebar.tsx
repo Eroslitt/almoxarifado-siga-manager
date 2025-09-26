@@ -12,7 +12,8 @@ import {
   FolderX,
   X,
   CheckCircle,
-  Shield
+  Shield,
+  Package
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigation } from '@/contexts/NavigationContext';
@@ -79,6 +80,12 @@ export const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
       label: 'Controle de EPIs', 
       icon: Shield,
       description: 'Gestão de equipamentos de proteção'
+    },
+    { 
+      id: 'material-request', 
+      label: 'Requisição de Materiais', 
+      icon: Package,
+      description: 'Solicitação automatizada de materiais'
     },
   ];
 

@@ -14,13 +14,308 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      epi_assignments: {
+        Row: {
+          assigned_at: string | null
+          employee_document: string | null
+          employee_name: string
+          epi_id: string
+          id: string
+          notes: string | null
+          returned_at: string | null
+          signature_data: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          employee_document?: string | null
+          employee_name: string
+          epi_id: string
+          id?: string
+          notes?: string | null
+          returned_at?: string | null
+          signature_data?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          employee_document?: string | null
+          employee_name?: string
+          epi_id?: string
+          id?: string
+          notes?: string | null
+          returned_at?: string | null
+          signature_data?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epi_assignments_epi_id_fkey"
+            columns: ["epi_id"]
+            isOneToOne: false
+            referencedRelation: "epis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epis: {
+        Row: {
+          brand: string | null
+          certificate_number: string | null
+          created_at: string | null
+          expiry_date: string | null
+          id: string
+          location: string | null
+          model: string | null
+          name: string
+          serial_number: string | null
+          status: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          brand?: string | null
+          certificate_number?: string | null
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          location?: string | null
+          model?: string | null
+          name: string
+          serial_number?: string | null
+          status?: string
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          brand?: string | null
+          certificate_number?: string | null
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          location?: string | null
+          model?: string | null
+          name?: string
+          serial_number?: string | null
+          status?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      material_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          attachments: string[] | null
+          created_at: string
+          delivered_at: string | null
+          delivered_by: string | null
+          department: string | null
+          id: string
+          items: Json
+          notes: string | null
+          priority: string
+          project_code: string | null
+          request_number: string
+          requested_at: string
+          requester_name: string
+          status: string
+          total_estimated_value: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          attachments?: string[] | null
+          created_at?: string
+          delivered_at?: string | null
+          delivered_by?: string | null
+          department?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          priority?: string
+          project_code?: string | null
+          request_number: string
+          requested_at?: string
+          requester_name: string
+          status?: string
+          total_estimated_value?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          attachments?: string[] | null
+          created_at?: string
+          delivered_at?: string | null
+          delivered_by?: string | null
+          department?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          priority?: string
+          project_code?: string | null
+          request_number?: string
+          requested_at?: string
+          requester_name?: string
+          status?: string
+          total_estimated_value?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      material_verifications: {
+        Row: {
+          batch_number: string | null
+          created_at: string | null
+          delivery_date: string | null
+          id: string
+          inspector_name: string | null
+          inspector_signature: string | null
+          material_name: string
+          notes: string | null
+          photos: string[] | null
+          quality_check: Json | null
+          quantity: number | null
+          supplier: string | null
+          unit: string | null
+          updated_at: string | null
+          user_id: string
+          verification_status: string
+        }
+        Insert: {
+          batch_number?: string | null
+          created_at?: string | null
+          delivery_date?: string | null
+          id?: string
+          inspector_name?: string | null
+          inspector_signature?: string | null
+          material_name: string
+          notes?: string | null
+          photos?: string[] | null
+          quality_check?: Json | null
+          quantity?: number | null
+          supplier?: string | null
+          unit?: string | null
+          updated_at?: string | null
+          user_id: string
+          verification_status?: string
+        }
+        Update: {
+          batch_number?: string | null
+          created_at?: string | null
+          delivery_date?: string | null
+          id?: string
+          inspector_name?: string | null
+          inspector_signature?: string | null
+          material_name?: string
+          notes?: string | null
+          photos?: string[] | null
+          quality_check?: Json | null
+          quantity?: number | null
+          supplier?: string | null
+          unit?: string | null
+          updated_at?: string | null
+          user_id?: string
+          verification_status?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          company_name: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          subscription_end_date: string | null
+          subscription_status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          subscription_end_date?: string | null
+          subscription_status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          subscription_end_date?: string | null
+          subscription_status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          end_date: string | null
+          external_payment_id: string | null
+          id: string
+          payment_method: string | null
+          plan_name: string
+          start_date: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          end_date?: string | null
+          external_payment_id?: string | null
+          id?: string
+          payment_method?: string | null
+          plan_name?: string
+          start_date?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          end_date?: string | null
+          external_payment_id?: string | null
+          id?: string
+          payment_method?: string | null
+          plan_name?: string
+          start_date?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_request_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
