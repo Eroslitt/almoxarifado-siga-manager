@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { LogIn, UserPlus, LogOut, User } from 'lucide-react';
 
 interface AuthButtonProps {
@@ -20,7 +20,7 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const { toast } = useToast();
+  
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,10 +42,7 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
       }
 
       console.log('✅ Login bem-sucedido');
-      toast({
-        title: "Sucesso!",
-        description: "Login realizado com sucesso.",
-      });
+      toast.success("Sucesso!", { description: "Login realizado com sucesso." });
 
       setIsOpen(false);
       resetForm();
