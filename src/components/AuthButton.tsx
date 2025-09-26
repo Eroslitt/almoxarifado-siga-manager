@@ -49,10 +49,8 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
       onAuthChange();
     } catch (error: any) {
       console.error('🔴 Erro capturado no login:', error);
-      toast({
-        title: "Erro no login",
+      toast.error("Erro no login", {
         description: error.message || "Erro ao fazer login",
-        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -92,13 +90,11 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
       console.log('✅ Signup bem-sucedido');
 
       if (data.user && !data.user.email_confirmed_at) {
-        toast({
-          title: "Cadastro realizado!",
+        toast.success("Cadastro realizado!", {
           description: "Verifique seu email para confirmar a conta.",
         });
       } else if (data.user && data.user.email_confirmed_at) {
-        toast({
-          title: "Cadastro realizado!",
+        toast.success("Cadastro realizado!", {
           description: "Conta criada e confirmada com sucesso!",
         });
         onAuthChange();
@@ -119,10 +115,8 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
         errorMessage = "Email inválido. Verifique e tente novamente.";
       }
       
-      toast({
-        title: "Erro no cadastro",
+      toast.error("Erro no cadastro", {
         description: errorMessage,
-        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -134,17 +128,14 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      toast({
-        title: "Logout realizado",
+      toast.success("Logout realizado", {
         description: "Você foi desconectado com sucesso.",
       });
       
       onAuthChange();
     } catch (error: any) {
-      toast({
-        title: "Erro",
+      toast.error("Erro", {
         description: error.message || "Erro ao fazer logout",
-        variant: "destructive",
       });
     }
   };
