@@ -293,8 +293,8 @@ export const QRScanner = () => {
                   <User className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">{user.full_name || user.email}</h3>
-                  <p className="text-sm text-gray-600">ID: {user.id} • {user.company_name || 'SIGA'}</p>
+                  <h3 className="font-semibold">{user.name}</h3>
+                  <p className="text-sm text-gray-600">ID: {user.id} • {user.department}</p>
                 </div>
               </div>
             </div>
@@ -439,8 +439,8 @@ export const QRScanner = () => {
 
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium mb-2">Usuário:</h4>
-                <p>{user.full_name || user.email} (ID: {user.id})</p>
-                <p className="text-sm text-gray-600">{user.company_name || 'SIGA'}</p>
+                <p>{user.name} (ID: {user.id})</p>
+                <p className="text-sm text-gray-600">{user.department}</p>
               </div>
 
               <div className="flex space-x-2">
