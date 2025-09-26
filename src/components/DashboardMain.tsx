@@ -329,5 +329,3 @@ export const DashboardMain: React.FC<DashboardProps> = ({ onModuleChange }) => {
     </div>
   );
 };
-
-export default DashboardMain;
