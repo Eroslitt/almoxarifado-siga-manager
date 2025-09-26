@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Sidebar } from '@/components/Sidebar';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { MobileLayout } from '@/components/layout/MobileLayout';
+import { Dashboard } from '@/components/Dashboard';
 import { DashboardMain } from '@/components/DashboardMain';
 import { MasterDataModule } from '@/components/MasterDataModule';
 import { StockModule } from '@/components/StockModule';
@@ -151,7 +152,7 @@ const IndexContent = () => {
       case 'reports':
         return <ReportsModule />;
       default:
-        return <DashboardMain onModuleChange={setActiveModule} />;
+        return <Dashboard />;
     }
   };
 
