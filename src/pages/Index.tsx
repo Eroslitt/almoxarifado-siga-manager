@@ -11,6 +11,8 @@ import { ReceivingModule } from '@/components/ReceivingModule';
 import { ShippingModule } from '@/components/ShippingModule';
 import { ReportsModule } from '@/components/ReportsModule';
 import { MoreOptionsModule } from '@/components/MoreOptionsModule';
+import { MaterialVerificationModule } from '@/components/MaterialVerificationModule';
+import { EPIControlModule } from '@/components/EPIControlModule';
 import { AdvancedNotificationCenter } from '@/components/notifications/AdvancedNotificationCenter';
 import { GlobalSearchV2 } from '@/components/search/GlobalSearchV2';
 import { PersonalizedDashboard } from '@/components/dashboard/PersonalizedDashboard';
@@ -87,6 +89,12 @@ const IndexContent = () => {
         case 'reports':
           setBreadcrumbs([{ label: 'Relatórios', path: '/reports' }]);
           break;
+        case 'material-verification':
+          setBreadcrumbs([{ label: 'Verificação de Materiais', path: '/material-verification' }]);
+          break;
+        case 'epi-control':
+          setBreadcrumbs([{ label: 'Controle de EPIs', path: '/epi-control' }]);
+          break;
         default:
           setBreadcrumbs([]);
       }
@@ -134,6 +142,10 @@ const IndexContent = () => {
         return <ShippingModule />;
       case 'reports':
         return <ReportsModule />;
+      case 'material-verification':
+        return <MaterialVerificationModule />;
+      case 'epi-control':
+        return <EPIControlModule />;
       default:
         return <Dashboard />;
     }

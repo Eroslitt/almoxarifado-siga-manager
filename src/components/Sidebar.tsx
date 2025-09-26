@@ -10,7 +10,9 @@ import {
   FolderMinus,
   Search,
   FolderX,
-  X
+  X,
+  CheckCircle,
+  Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigation } from '@/contexts/NavigationContext';
@@ -65,6 +67,18 @@ export const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
       label: 'Relatórios', 
       icon: TrendingUp,
       description: 'Análises e relatórios'
+    },
+    { 
+      id: 'material-verification', 
+      label: 'Verificação de Materiais', 
+      icon: CheckCircle,
+      description: 'Controle de qualidade de materiais'
+    },
+    { 
+      id: 'epi-control', 
+      label: 'Controle de EPIs', 
+      icon: Shield,
+      description: 'Gestão de equipamentos de proteção'
     },
   ];
 
