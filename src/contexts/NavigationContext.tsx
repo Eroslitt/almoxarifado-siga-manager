@@ -1,5 +1,5 @@
 
-import * as React from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 
 interface NavigationContextType {
   activeModule: string;
@@ -10,10 +10,10 @@ interface NavigationContextType {
   setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
-const NavigationContext = React.createContext<NavigationContextType | undefined>(undefined);
+const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
 interface NavigationProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children }) => {
@@ -38,7 +38,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
 };
 
 export const useNavigation = () => {
-  const context = React.useContext(NavigationContext);
+  const context = useContext(NavigationContext);
   if (!context) {
     throw new Error('useNavigation deve ser usado dentro de um NavigationProvider');
   }
