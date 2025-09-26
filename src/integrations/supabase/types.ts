@@ -232,6 +232,78 @@ export type Database = {
         }
         Relationships: []
       }
+      patrimonios: {
+        Row: {
+          categoria: string
+          codigo_patrimonio: string
+          created_at: string
+          data_aquisicao: string | null
+          descricao: string | null
+          estado_conservacao: string
+          etiqueta_data: Json | null
+          fornecedor: string | null
+          foto_url: string | null
+          id: string
+          localizacao: string | null
+          marca: string | null
+          modelo: string | null
+          nome: string
+          numero_serie: string | null
+          observacoes: string | null
+          responsavel: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          valor_aquisicao: number | null
+        }
+        Insert: {
+          categoria: string
+          codigo_patrimonio: string
+          created_at?: string
+          data_aquisicao?: string | null
+          descricao?: string | null
+          estado_conservacao?: string
+          etiqueta_data?: Json | null
+          fornecedor?: string | null
+          foto_url?: string | null
+          id?: string
+          localizacao?: string | null
+          marca?: string | null
+          modelo?: string | null
+          nome: string
+          numero_serie?: string | null
+          observacoes?: string | null
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          valor_aquisicao?: number | null
+        }
+        Update: {
+          categoria?: string
+          codigo_patrimonio?: string
+          created_at?: string
+          data_aquisicao?: string | null
+          descricao?: string | null
+          estado_conservacao?: string
+          etiqueta_data?: Json | null
+          fornecedor?: string | null
+          foto_url?: string | null
+          id?: string
+          localizacao?: string | null
+          marca?: string | null
+          modelo?: string | null
+          nome?: string
+          numero_serie?: string | null
+          observacoes?: string | null
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          valor_aquisicao?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_name: string | null
@@ -312,6 +384,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_patrimonio_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_request_number: {
         Args: Record<PropertyKey, never>
         Returns: string

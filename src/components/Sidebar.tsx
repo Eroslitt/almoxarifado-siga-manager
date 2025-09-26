@@ -13,7 +13,8 @@ import {
   X,
   CheckCircle,
   Shield,
-  Package
+  Package,
+  Archive
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigation } from '@/contexts/NavigationContext';
@@ -86,6 +87,12 @@ export const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
       label: 'Requisição de Materiais', 
       icon: Package,
       description: 'Solicitação automatizada de materiais'
+    },
+    { 
+      id: 'patrimonios', 
+      label: 'Patrimônios', 
+      icon: Archive,
+      description: 'Controle de ativos com etiquetas'
     },
   ];
 
