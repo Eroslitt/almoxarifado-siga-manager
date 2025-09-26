@@ -5,7 +5,6 @@ import { Sidebar } from '@/components/Sidebar';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Dashboard } from '@/components/Dashboard';
-import { DashboardMain } from '@/components/DashboardMain';
 import { MasterDataModule } from '@/components/MasterDataModule';
 import { StockModule } from '@/components/StockModule';
 import { ToolsQRModule } from '@/components/ToolsQRModule';
@@ -120,7 +119,7 @@ const IndexContent = () => {
   const renderModule = () => {
     switch (activeModule) {
       case 'dashboard':
-        return <DashboardMain onModuleChange={setActiveModule} />;
+        return <Dashboard />;
       case 'more':
         return <MoreOptionsModule onModuleChange={handleModuleChange} />;
       case 'personalized-dashboard':
