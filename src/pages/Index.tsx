@@ -28,7 +28,7 @@ import { ConnectorHub } from '@/components/integration/ConnectorHub';
 import { PWAInstaller } from '@/components/mobile/PWAInstaller';
 import { AccessibilityMenu } from '@/components/accessibility/AccessibilityMenu';
 import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
-import { AuthProvider, useAuth } from '@/components/AuthProvider';
+import { useAuth } from '@/components/AuthProvider';
 import { AuthButton } from '@/components/AuthButton';
 import { ViewportProvider } from '@/components/ui/viewport-provider';
 import { useMobile } from '@/hooks/use-mobile';
