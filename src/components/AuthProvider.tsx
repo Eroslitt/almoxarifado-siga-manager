@@ -108,18 +108,56 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('users')
+      // Try to get from profiles table first
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
         .select('*')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single();
 
-      if (error) {
-        console.error('Erro ao carregar perfil do usuário:', error);
+      if (profileData) {
+        // Convert profile data to User format
+        const userData: User = {
+          id: profileData.user_id,
+          email: supabaseUser?.email || '',
+          name: profileData.full_name || 'Usuário',
+          department: 'Usuário',
+          role: 'operator',
+          active: true,
+          notification_preferences: { email: true, push: true },
+          created_at: profileData.created_at,
+          updated_at: profileData.updated_at
+        };
+        setUser(userData);
         return;
       }
 
-      setUser(data);
+      // If no profile exists, create one
+      if (supabaseUser) {
+        const newProfile = {
+          user_id: userId,
+          full_name: supabaseUser.user_metadata?.full_name || 'Usuário'
+        };
+
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert(newProfile);
+
+        if (!insertError) {
+          const userData: User = {
+            id: userId,
+            email: supabaseUser.email || '',
+            name: newProfile.full_name,
+            department: 'Usuário',
+            role: 'operator',
+            active: true,
+            notification_preferences: { email: true, push: true },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          setUser(userData);
+        }
+      }
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);
     }

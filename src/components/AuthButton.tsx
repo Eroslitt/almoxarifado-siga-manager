@@ -57,28 +57,58 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('Tentando criar conta para:', email);
+      
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: fullName,
           }
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro no signup:', error);
+        throw error;
+      }
 
-      toast({
-        title: "Cadastro realizado!",
-        description: "Verifique seu email para confirmar a conta.",
-      });
+      console.log('Signup response:', data);
+
+      if (data.user && !data.user.email_confirmed_at) {
+        toast({
+          title: "Cadastro realizado!",
+          description: "Verifique seu email para confirmar a conta.",
+        });
+      } else if (data.user && data.user.email_confirmed_at) {
+        toast({
+          title: "Cadastro realizado!",
+          description: "Conta criada e confirmada com sucesso!",
+        });
+        onAuthChange();
+      }
 
       setIsOpen(false);
+      resetForm();
     } catch (error: any) {
+      console.error('Erro no cadastro:', error);
+      
+      let errorMessage = error.message || "Erro ao criar conta";
+      
+      // Handle specific Supabase errors
+      if (error.message?.includes('User already registered')) {
+        errorMessage = "Este email já está cadastrado. Tente fazer login.";
+      } else if (error.message?.includes('Password should be at least')) {
+        errorMessage = "A senha deve ter pelo menos 6 caracteres.";
+      } else if (error.message?.includes('Invalid email')) {
+        errorMessage = "Email inválido. Verifique e tente novamente.";
+      }
+      
       toast({
         title: "Erro no cadastro",
-        description: error.message || "Erro ao criar conta",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
