@@ -28,12 +28,12 @@ import { ConnectorHub } from '@/components/integration/ConnectorHub';
 import { PWAInstaller } from '@/components/mobile/PWAInstaller';
 import { AccessibilityMenu } from '@/components/accessibility/AccessibilityMenu';
 import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
-import { AuthProvider } from '@/components/AuthProvider';
+import { AuthProvider, useAuth } from '@/components/AuthProvider';
 import { AuthButton } from '@/components/AuthButton';
 import { ViewportProvider } from '@/components/ui/viewport-provider';
 import { useMobile } from '@/hooks/use-mobile';
-import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
+import { Toaster } from '@/components/ui/toaster';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 
@@ -175,27 +175,24 @@ const IndexContent = () => {
   // Mobile Layout
   if (isMobile) {
     return (
-      <AuthProvider>
-        <ViewportProvider>
-          <MobileLayout 
-            activeModule={activeModule}
-            onModuleChange={handleModuleChange}
-          >
-            {renderModule()}
-          </MobileLayout>
-          <PWAInstaller />
-          <AccessibilityMenu />
-          <Toaster />
-          <Sonner />
-        </ViewportProvider>
-      </AuthProvider>
+      <ViewportProvider>
+        <MobileLayout 
+          activeModule={activeModule}
+          onModuleChange={handleModuleChange}
+        >
+          {renderModule()}
+        </MobileLayout>
+        <PWAInstaller />
+        <AccessibilityMenu />
+        <Toaster />
+        <Sonner />
+      </ViewportProvider>
     );
   }
 
   // Desktop Layout
   return (
-    <AuthProvider>
-      <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex">
         <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
         <div className="flex-1 flex flex-col min-w-0">
           <div className="border-b bg-white px-6 py-4">
@@ -213,20 +210,21 @@ const IndexContent = () => {
             {renderModule()}
           </main>
         </div>
-        <PWAInstaller />
-        <AccessibilityMenu />
-        <Toaster />
-        <Sonner />
-      </div>
-    </AuthProvider>
+      <PWAInstaller />
+      <AccessibilityMenu />
+      <Toaster />
+      <Sonner />
+    </div>
   );
 };
 
 const Index = () => {
   return (
-    <NavigationProvider>
-      <IndexContent />
-    </NavigationProvider>
+    <AuthProvider>
+      <NavigationProvider>
+        <IndexContent />
+      </NavigationProvider>
+    </AuthProvider>
   );
 };
 
