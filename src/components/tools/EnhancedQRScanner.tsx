@@ -234,8 +234,8 @@ export const EnhancedQRScanner = () => {
                   <User className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">{user.name}</h3>
-                  <p className="text-sm text-gray-600">ID: {user.id} • {user.department}</p>
+                  <h3 className="font-semibold">{user.full_name || user.email}</h3>
+                  <p className="text-sm text-gray-600">ID: {user.id} • {user.company_name || 'SIGA'}</p>
                 </div>
               </div>
             </div>
