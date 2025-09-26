@@ -1,171 +1,118 @@
-
-import { cn } from '@/lib/utils';
+import React from 'react';
 import { 
-  TrendingUp, 
-  Folder, 
-  ArrowUp, 
-  FolderPlus, 
-  FilePlus,
+  Home, 
+  Shield, 
+  FileText, 
+  Package, 
+  TruckIcon, 
+  BarChart3, 
+  QrCode,
   Settings,
-  FolderMinus,
-  Search,
-  FolderX,
-  X
+  ShoppingCart,
+  Building2,
+  ClipboardCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigation } from '@/contexts/NavigationContext';
+import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
   activeModule: string;
   onModuleChange: (module: string) => void;
+  className?: string;
 }
 
-export const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
-  const { sidebarCollapsed, setSidebarCollapsed } = useNavigation();
+const menuItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: Home, badge: null },
+  { id: 'epi-control', label: 'Controle de EPIs', icon: Shield, badge: 'Novo' },
+  { id: 'material-verification', label: 'Verificação de Materiais', icon: ClipboardCheck, badge: 'Novo' },
+  { id: 'master-data', label: 'Dados Mestres', icon: Building2, badge: null },
+  { id: 'stock', label: 'Estoque', icon: Package, badge: null },
+  { id: 'receiving', label: 'Recebimento', icon: TruckIcon, badge: null },
+  { id: 'shipping', label: 'Expedição', icon: ShoppingCart, badge: null },
+  { id: 'reports', label: 'Relatórios', icon: BarChart3, badge: null },
+  { id: 'tools-qr', label: 'Ferramentas QR', icon: QrCode, badge: null },
+  { id: 'more-options', label: 'Mais Opções', icon: Settings, badge: null },
+];
 
-  const menuItems = [
-    { 
-      id: 'dashboard', 
-      label: 'Dashboard', 
-      icon: FolderMinus,
-      description: 'Visão geral do sistema'
-    },
-    { 
-      id: 'masterdata', 
-      label: 'Master Data', 
-      icon: FolderX,
-      description: 'Gestão de dados mestres'
-    },
-    { 
-      id: 'stock', 
-      label: 'Gestão de Estoque', 
-      icon: Folder,
-      description: 'Controle de inventário'
-    },
-    { 
-      id: 'tools-qr', 
-      label: 'Ferramentas QR', 
-      icon: Search,
-      description: 'Sistema SGF-QR'
-    },
-    { 
-      id: 'receiving', 
-      label: 'Recebimento', 
-      icon: ArrowUp,
-      description: 'Entrada de materiais'
-    },
-    { 
-      id: 'shipping', 
-      label: 'Expedição', 
-      icon: FolderPlus,
-      description: 'Saída de materiais'
-    },
-    { 
-      id: 'reports', 
-      label: 'Relatórios', 
-      icon: TrendingUp,
-      description: 'Análises e relatórios'
-    },
-  ];
-
-  const handleModuleClick = (moduleId: string) => {
-    console.log('Sidebar: Changing module to:', moduleId);
-    try {
-      onModuleChange(moduleId);
-      // Update breadcrumbs based on module
-      const moduleItem = menuItems.find(item => item.id === moduleId);
-      if (moduleItem) {
-        // This will be handled by individual modules
-      }
-    } catch (error) {
-      console.error('Error changing module:', error);
-    }
-  };
+export const Sidebar: React.FC<SidebarProps> = ({ 
+  activeModule, 
+  onModuleChange, 
+  className = '' 
+}) => {
+  const { user } = useAuth();
 
   return (
-    <>
-      {/* Mobile Overlay */}
-      {!sidebarCollapsed && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setSidebarCollapsed(true)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div className={cn(
-        "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col transition-transform duration-300",
-        sidebarCollapsed && "-translate-x-full lg:translate-x-0"
-      )}>
-        {/* Header */}
-        <div className="p-6 border-b border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-blue-400">SIGA</h1>
-              <p className="text-sm text-slate-300 mt-1">Sistema Integrado de Gestão</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarCollapsed(true)}
-              className="lg:hidden text-white hover:bg-slate-800"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+    <div className={`w-64 bg-white border-r border-gray-200 h-full flex flex-col ${className}`}>
+      {/* Header */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+            <Building2 className="h-6 w-6 text-primary-foreground" />
           </div>
-        </div>
-        
-        {/* Navigation */}
-        <nav className="flex-1 p-4 overflow-y-auto">
-          <div className="space-y-2">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeModule === item.id;
-              
-              return (
-                <div key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => handleModuleClick(item.id)}
-                    className={cn(
-                      "w-full group flex items-center space-x-3 px-3 py-3 rounded-lg text-left transition-all duration-200 cursor-pointer",
-                      isActive
-                        ? "bg-blue-600 text-white shadow-lg transform scale-[1.02]"
-                        : "text-slate-300 hover:bg-slate-800 hover:text-white hover:scale-[1.01]"
-                    )}
-                  >
-                    <Icon className={cn(
-                      "h-5 w-5 flex-shrink-0 transition-colors",
-                      isActive ? "text-white" : "text-slate-400 group-hover:text-white"
-                    )} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{item.label}</div>
-                      <div className={cn(
-                        "text-xs truncate transition-colors",
-                        isActive ? "text-blue-100" : "text-slate-500 group-hover:text-slate-300"
-                      )}>
-                        {item.description}
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              );
-            })}
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">SIGA</h2>
+            <p className="text-sm text-gray-500">Almoxarifado</p>
           </div>
-        </nav>
-        
-        {/* Footer */}
-        <div className="p-4 border-t border-slate-700">
-          <button 
-            type="button"
-            onClick={() => console.log('Settings clicked')}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
-          >
-            <Settings className="h-5 w-5" />
-            <span className="text-sm font-medium">Configurações</span>
-          </button>
         </div>
       </div>
-    </>
+
+      {/* User Info */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+            <span className="text-sm font-semibold text-blue-600">
+              {user?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">
+              {user?.full_name || user?.email}
+            </p>
+            <p className="text-xs text-gray-500 truncate">
+              {user?.company_name || 'SIGA Premium'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 space-y-2">
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeModule === item.id;
+          
+          return (
+            <Button
+              key={item.id}
+              variant={isActive ? "default" : "ghost"}
+              className={`w-full justify-start h-auto p-3 ${
+                isActive 
+                  ? 'bg-primary text-primary-foreground shadow-sm' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              onClick={() => onModuleChange(item.id)}
+            >
+              <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.badge && (
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  {item.badge}
+                </Badge>
+              )}
+            </Button>
+          );
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-200">
+        <div className="text-center">
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+            ✓ Premium Ativo
+          </Badge>
+        </div>
+      </div>
+    </div>
   );
 };
