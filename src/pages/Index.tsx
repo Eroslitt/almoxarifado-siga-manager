@@ -1,9 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Sidebar } from '@/components/Sidebar';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Dashboard } from '@/components/Dashboard';
+import { DashboardMain } from '@/components/DashboardMain';
 import { MasterDataModule } from '@/components/MasterDataModule';
 import { StockModule } from '@/components/StockModule';
 import { ToolsQRModule } from '@/components/ToolsQRModule';
@@ -31,7 +33,22 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 
 const IndexContent = () => {
+  const { user, loading } = useAuth();
   const [activeModule, setActiveModule] = useState('dashboard');
+
+  // Redirect if not authenticated or no subscription
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        window.location.href = '/auth';
+        return;
+      }
+      if (user.subscription_status !== 'active') {
+        window.location.href = '/pricing';
+        return;
+      }
+    }
+  }, [user, loading]);
   const { setSidebarCollapsed, setBreadcrumbs } = useNavigation();
   const isMobile = useMobile();
 
@@ -103,7 +120,7 @@ const IndexContent = () => {
   const renderModule = () => {
     switch (activeModule) {
       case 'dashboard':
-        return <Dashboard />;
+        return <DashboardMain onModuleChange={setActiveModule} />;
       case 'more':
         return <MoreOptionsModule onModuleChange={handleModuleChange} />;
       case 'personalized-dashboard':

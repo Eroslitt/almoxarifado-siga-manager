@@ -352,7 +352,18 @@ export interface Database {
 
 export type Tool = Database['public']['Tables']['tools']['Row'];
 export type ToolMovement = Database['public']['Tables']['tool_movements']['Row'];
-export type User = Database['public']['Tables']['users']['Row'];
+export interface User {
+  id: string;
+  email: string;
+  full_name?: string;
+  company_name?: string;
+  phone?: string;
+  subscription_status: 'active' | 'inactive' | 'cancelled';
+  subscription_end_date?: string;
+  created_at: string;
+}
+
+export type DatabaseUser = Database['public']['Tables']['users']['Row'];
 export type ToolReservation = Database['public']['Tables']['tool_reservations']['Row'];
 export type MaintenanceSchedule = Database['public']['Tables']['maintenance_schedules']['Row'];
 export type Alert = Database['public']['Tables']['alerts']['Row'];

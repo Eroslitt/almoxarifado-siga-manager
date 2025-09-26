@@ -1,7 +1,6 @@
-
-import React from 'react';
-import { supabase, isDemoMode } from '@/lib/supabase';
-import { User as SupabaseUser } from '@supabase/supabase-js';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types/database';
 import { AuthContext } from '@/contexts/AuthContext';
 
@@ -10,170 +9,145 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  console.log('🔄 AuthProvider rendering...');
-  
-  const [user, setUser] = React.useState<User | null>(null);
-  const [supabaseUser, setSupabaseUser] = React.useState<SupabaseUser | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (isDemoMode) {
-          // Demo mode - use mock user
-          const mockUser: User = {
-            id: 'demo-user-123',
-            email: 'demo@siga.com',
-            name: 'Demo User',
-            department: 'Almoxarifado',
-            role: 'administrator',
-            active: true,
-            notification_preferences: { email: true, push: true },
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-
-          const mockSupabaseUser = {
-            id: 'demo-user-123',
-            email: 'demo@siga.com',
-            user_metadata: {
-              name: 'Demo User',
-              department: 'Almoxarifado'
-            },
-            app_metadata: {},
-            aud: 'authenticated',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          } as SupabaseUser;
-
-          setUser(mockUser);
-          setSupabaseUser(mockSupabaseUser);
-          setLoading(false);
-          
-          console.log('✅ Demo authentication initialized');
-          return;
-        }
-
-        // Real Supabase mode
-        const { data: { session } } = await supabase.auth.getSession();
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session);
+        setSession(session);
+        setSupabaseUser(session?.user ?? null);
         
         if (session?.user) {
-          setSupabaseUser(session.user);
-          await loadUserProfile(session.user.id);
+          // Defer profile loading to avoid deadlock
+          setTimeout(() => {
+            loadUserProfile(session.user.id);
+          }, 0);
+        } else {
+          setUser(null);
         }
-        
-        setLoading(false);
-
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-          console.log('Auth state changed:', event, session?.user?.email);
-          
-          if (session?.user) {
-            setSupabaseUser(session.user);
-            await loadUserProfile(session.user.id);
-          } else {
-            setSupabaseUser(null);
-            setUser(null);
-          }
-          
-          setLoading(false);
-        });
-
-        return () => subscription.unsubscribe();
-      } catch (error) {
-        console.error('Error initializing auth:', error);
         setLoading(false);
       }
-    };
+    );
 
-    initAuth();
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setSupabaseUser(session?.user ?? null);
+      
+      if (session?.user) {
+        loadUserProfile(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const loadUserProfile = async (userId: string) => {
     try {
-      if (isDemoMode) {
-        // Demo mode - return mock user
-        const mockUser: User = {
-          id: userId,
-          email: 'demo@siga.com',
-          name: 'Demo User',
-          department: 'Almoxarifado',
-          role: 'administrator',
-          active: true,
-          notification_preferences: { email: true, push: true },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        setUser(mockUser);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('users')
+      const { data: profile, error } = await supabase
+        .from('profiles')
         .select('*')
-        .eq('id', userId)
-        .single();
+        .eq('user_id', userId)
+        .maybeSingle();
 
       if (error) {
-        console.error('Erro ao carregar perfil do usuário:', error);
+        console.error('Error loading user profile:', error);
         return;
       }
 
-      setUser(data);
+      if (profile) {
+        setUser({
+          id: profile.user_id,
+          email: supabaseUser?.email || '',
+          full_name: profile.full_name,
+          company_name: profile.company_name,
+          phone: profile.phone,
+          subscription_status: profile.subscription_status as 'active' | 'inactive' | 'cancelled',
+          subscription_end_date: profile.subscription_end_date,
+          created_at: profile.created_at,
+        });
+      }
     } catch (error) {
-      console.error('Erro ao carregar perfil:', error);
+      console.error('Error in loadUserProfile:', error);
     }
   };
 
-  const signIn = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
+  const signIn = async (email: string, password: string) => {
     try {
-      if (isDemoMode) {
-        // Demo mode - always succeed
-        return { success: true, message: 'Login realizado com sucesso (modo demo)' };
-      }
-
+      setLoading(true);
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error('Erro no login:', error);
         return { success: false, message: error.message };
       }
 
-      return { success: true, message: 'Login realizado com sucesso' };
-    } catch (error) {
-      console.error('Erro no login:', error);
-      return { success: false, message: 'Erro interno do servidor' };
+      return { success: true, message: 'Login realizado com sucesso!' };
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signUp = async (email: string, password: string, fullName: string) => {
+    try {
+      setLoading(true);
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName,
+          }
+        }
+      });
+
+      if (error) {
+        return { success: false, message: error.message };
+      }
+
+      return { success: true, message: 'Conta criada com sucesso! Verifique seu email para confirmar.' };
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    } finally {
+      setLoading(false);
     }
   };
 
   const signOut = async () => {
     try {
-      if (isDemoMode) {
-        // Demo mode - just clear state
-        setUser(null);
-        setSupabaseUser(null);
-        console.log('Demo logout successful');
-        return;
-      }
-
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Erro no logout:', error);
+        console.error('Error signing out:', error);
       }
+      setUser(null);
+      setSupabaseUser(null);
+      setSession(null);
     } catch (error) {
-      console.error('Erro no logout:', error);
+      console.error('Error in signOut:', error);
     }
   };
 
   const contextValue = {
     user,
     supabaseUser,
+    session,
     loading,
     signIn,
-    signOut
+    signUp,
+    signOut,
   };
 
   return (
