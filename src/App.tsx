@@ -14,15 +14,23 @@ const App = () => (
     <BrowserRouter>
       <Routes>
         <Route path="/auth" element={<Auth />} />
-        <Route path="/*" element={
-          <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/subscription" element={<Subscription />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        } />
+        <Route 
+          path="/*" 
+          element={
+            <AuthProvider>
+              <Index />
+            </AuthProvider>
+          } 
+        />
+        <Route 
+          path="/subscription" 
+          element={
+            <AuthProvider>
+              <Subscription />
+            </AuthProvider>
+          } 
+        />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   </QueryClientProvider>
