@@ -34,7 +34,6 @@ import { ViewportProvider } from '@/components/ui/viewport-provider';
 import { useMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { Toaster } from '@/components/ui/toaster';
-import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 
 const IndexContent = () => {
@@ -220,11 +219,9 @@ const IndexContent = () => {
 
 const Index = () => {
   return (
-    <AuthProvider>
-      <NavigationProvider>
-        <IndexContent />
-      </NavigationProvider>
-    </AuthProvider>
+    <NavigationProvider>
+      <IndexContent />
+    </NavigationProvider>
   );
 };
 
