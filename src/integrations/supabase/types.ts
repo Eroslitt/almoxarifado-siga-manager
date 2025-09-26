@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       epi_assignments: {
         Row: {
           assigned_at: string | null
@@ -342,10 +386,13 @@ export type Database = {
       }
       skus: {
         Row: {
+          alternative_suppliers: string[] | null
           category: string
+          category_id: string | null
           classification: string | null
           created_at: string
           current_stock: number
+          default_supplier_id: string | null
           description: string | null
           id: string
           last_movement_date: string | null
@@ -360,10 +407,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          alternative_suppliers?: string[] | null
           category: string
+          category_id?: string | null
           classification?: string | null
           created_at?: string
           current_stock?: number
+          default_supplier_id?: string | null
           description?: string | null
           id?: string
           last_movement_date?: string | null
@@ -378,10 +428,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          alternative_suppliers?: string[] | null
           category?: string
+          category_id?: string | null
           classification?: string | null
           created_at?: string
           current_stock?: number
+          default_supplier_id?: string | null
           description?: string | null
           id?: string
           last_movement_date?: string | null
@@ -395,7 +448,76 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "skus_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skus_default_supplier_id_fkey"
+            columns: ["default_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_levels: {
+        Row: {
+          available_quantity: number | null
+          current_quantity: number
+          id: string
+          last_count_date: string | null
+          last_movement_date: string | null
+          location_id: string
+          reserved_quantity: number
+          sku_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_quantity?: number | null
+          current_quantity?: number
+          id?: string
+          last_count_date?: string | null
+          last_movement_date?: string | null
+          location_id: string
+          reserved_quantity?: number
+          sku_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_quantity?: number | null
+          current_quantity?: number
+          id?: string
+          last_count_date?: string | null
+          last_movement_date?: string | null
+          location_id?: string
+          reserved_quantity?: number
+          sku_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_levels_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "storage_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_levels_sku_id_fkey"
+            columns: ["sku_id"]
+            isOneToOne: false
+            referencedRelation: "skus"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_movements: {
         Row: {
@@ -441,6 +563,57 @@ export type Database = {
           },
         ]
       }
+      storage_locations: {
+        Row: {
+          capacity: number | null
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          level: string
+          position: string
+          restrictions: string[] | null
+          shelf: string
+          status: string
+          street: string
+          updated_at: string
+          user_id: string
+          zone_type: string
+        }
+        Insert: {
+          capacity?: number | null
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          level: string
+          position: string
+          restrictions?: string[] | null
+          shelf: string
+          status?: string
+          street: string
+          updated_at?: string
+          user_id: string
+          zone_type?: string
+        }
+        Update: {
+          capacity?: number | null
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          level?: string
+          position?: string
+          restrictions?: string[] | null
+          shelf?: string
+          status?: string
+          street?: string
+          updated_at?: string
+          user_id?: string
+          zone_type?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           amount: number
@@ -479,6 +652,236 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      suppliers: {
+        Row: {
+          address: Json
+          cnpj: string
+          company_name: string
+          contact_info: Json
+          created_at: string
+          id: string
+          ie: string | null
+          lead_time_days: number | null
+          payment_terms: string | null
+          rating: number | null
+          status: string
+          trade_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: Json
+          cnpj: string
+          company_name: string
+          contact_info?: Json
+          created_at?: string
+          id?: string
+          ie?: string | null
+          lead_time_days?: number | null
+          payment_terms?: string | null
+          rating?: number | null
+          status?: string
+          trade_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: Json
+          cnpj?: string
+          company_name?: string
+          contact_info?: Json
+          created_at?: string
+          id?: string
+          ie?: string | null
+          lead_time_days?: number | null
+          payment_terms?: string | null
+          rating?: number | null
+          status?: string
+          trade_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tool_movements: {
+        Row: {
+          actual_return_date: string | null
+          assigned_to_user_id: string | null
+          condition_after: string | null
+          condition_before: string | null
+          created_at: string
+          expected_return_date: string | null
+          from_location_id: string | null
+          id: string
+          movement_type: string
+          notes: string | null
+          performed_by_user_id: string
+          signature_data: string | null
+          timestamp: string
+          to_location_id: string | null
+          tool_id: string
+          user_id: string
+        }
+        Insert: {
+          actual_return_date?: string | null
+          assigned_to_user_id?: string | null
+          condition_after?: string | null
+          condition_before?: string | null
+          created_at?: string
+          expected_return_date?: string | null
+          from_location_id?: string | null
+          id?: string
+          movement_type: string
+          notes?: string | null
+          performed_by_user_id: string
+          signature_data?: string | null
+          timestamp?: string
+          to_location_id?: string | null
+          tool_id: string
+          user_id: string
+        }
+        Update: {
+          actual_return_date?: string | null
+          assigned_to_user_id?: string | null
+          condition_after?: string | null
+          condition_before?: string | null
+          created_at?: string
+          expected_return_date?: string | null
+          from_location_id?: string | null
+          id?: string
+          movement_type?: string
+          notes?: string | null
+          performed_by_user_id?: string
+          signature_data?: string | null
+          timestamp?: string
+          to_location_id?: string | null
+          tool_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tool_movements_from_location_id_fkey"
+            columns: ["from_location_id"]
+            isOneToOne: false
+            referencedRelation: "storage_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_movements_to_location_id_fkey"
+            columns: ["to_location_id"]
+            isOneToOne: false
+            referencedRelation: "storage_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_movements_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tools: {
+        Row: {
+          brand: string | null
+          category_id: string | null
+          created_at: string
+          current_user_id: string | null
+          description: string | null
+          id: string
+          last_maintenance: string | null
+          location_id: string | null
+          maintenance_interval_days: number | null
+          model: string | null
+          name: string
+          next_maintenance: string | null
+          photo_url: string | null
+          purchase_date: string | null
+          purchase_value: number | null
+          qr_code: string | null
+          serial_number: string | null
+          specifications: Json | null
+          status: string
+          supplier_id: string | null
+          updated_at: string
+          user_id: string
+          warranty_expiry: string | null
+        }
+        Insert: {
+          brand?: string | null
+          category_id?: string | null
+          created_at?: string
+          current_user_id?: string | null
+          description?: string | null
+          id?: string
+          last_maintenance?: string | null
+          location_id?: string | null
+          maintenance_interval_days?: number | null
+          model?: string | null
+          name: string
+          next_maintenance?: string | null
+          photo_url?: string | null
+          purchase_date?: string | null
+          purchase_value?: number | null
+          qr_code?: string | null
+          serial_number?: string | null
+          specifications?: Json | null
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+          user_id: string
+          warranty_expiry?: string | null
+        }
+        Update: {
+          brand?: string | null
+          category_id?: string | null
+          created_at?: string
+          current_user_id?: string | null
+          description?: string | null
+          id?: string
+          last_maintenance?: string | null
+          location_id?: string | null
+          maintenance_interval_days?: number | null
+          model?: string | null
+          name?: string
+          next_maintenance?: string | null
+          photo_url?: string | null
+          purchase_date?: string | null
+          purchase_value?: number | null
+          qr_code?: string | null
+          serial_number?: string | null
+          specifications?: Json | null
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+          user_id?: string
+          warranty_expiry?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tools_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tools_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "storage_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tools_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
