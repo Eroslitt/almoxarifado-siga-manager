@@ -1,5 +1,4 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Tool, ToolMovement, User } from '@/types/database';
 import { safetyComplianceApi } from './safetyComplianceApi';
 
 const db = supabase as any;
@@ -42,7 +41,7 @@ class ToolsApiService {
       }
 
       // Verificar se a ferramenta está disponível
-      const { data: tool, error: toolError } = await supabase
+      const { data: tool, error: toolError } = await db
         .from('tools')
         .select('*')
         .eq('id', request.toolId)
@@ -57,7 +56,7 @@ class ToolsApiService {
       }
 
       // Atualizar status da ferramenta
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from('tools')
         .update({
           status: 'in-use',
@@ -72,7 +71,7 @@ class ToolsApiService {
       }
 
       // Registrar movimentação
-      const { error: movementError } = await supabase
+      const { error: movementError } = await db
         .from('tool_movements')
         .insert({
           tool_id: request.toolId,
@@ -99,7 +98,7 @@ class ToolsApiService {
       console.log('Fazendo checkin da ferramenta:', request);
 
       // Verificar se a ferramenta está em uso
-      const { data: tool, error: toolError } = await supabase
+      const { data: tool, error: toolError } = await db
         .from('tools')
         .select('*')
         .eq('id', request.toolId)
@@ -117,7 +116,7 @@ class ToolsApiService {
       const newStatus = request.hasIssue ? 'maintenance' : 'available';
 
       // Atualizar status da ferramenta
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from('tools')
         .update({
           status: newStatus,
@@ -132,7 +131,7 @@ class ToolsApiService {
       }
 
       // Registrar movimentação
-      const { error: movementError } = await supabase
+      const { error: movementError } = await db
         .from('tool_movements')
         .insert({
           tool_id: request.toolId,
@@ -159,9 +158,9 @@ class ToolsApiService {
   }
 
   // Listar ferramentas com filtros
-  async getTools(filters: ToolsFilters = {}): Promise<{ data: Tool[]; total: number }> {
+  async getTools(filters: ToolsFilters = {}): Promise<{ data: any[]; total: number }> {
     try {
-      let query = supabase
+      let query = db
         .from('tools')
         .select('*', { count: 'exact' });
 
@@ -201,9 +200,9 @@ class ToolsApiService {
   }
 
   // Buscar histórico de uma ferramenta
-  async getToolHistory(toolId: string): Promise<ToolMovement[]> {
+  async getToolHistory(toolId: string): Promise<any[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('tool_movements')
         .select(`
           *,
@@ -225,9 +224,9 @@ class ToolsApiService {
   }
 
   // Atualizar status de uma ferramenta
-  async updateToolStatus(toolId: string, status: Tool['status']): Promise<{ success: boolean; message: string }> {
+  async updateToolStatus(toolId: string, status: string): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('tools')
         .update({
           status,
@@ -256,7 +255,7 @@ class ToolsApiService {
     maintenance: number;
   }> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('tools')
         .select('status');
 
@@ -267,9 +266,9 @@ class ToolsApiService {
 
       const stats = {
         total: data?.length || 0,
-        available: data?.filter(t => t.status === 'available').length || 0,
-        inUse: data?.filter(t => t.status === 'in-use').length || 0,
-        maintenance: data?.filter(t => t.status === 'maintenance').length || 0
+        available: data?.filter((t: any) => t.status === 'available').length || 0,
+        inUse: data?.filter((t: any) => t.status === 'in-use').length || 0,
+        maintenance: data?.filter((t: any) => t.status === 'maintenance').length || 0
       };
 
       return stats;

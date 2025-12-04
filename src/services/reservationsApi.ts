@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
-import { ToolReservation } from '@/types/database';
 
 const db = supabase as any;
+
 export interface CreateReservationRequest {
   toolId: string;
   userId: string;
@@ -16,7 +16,7 @@ class ReservationsApiService {
   async createReservation(request: CreateReservationRequest): Promise<{ success: boolean; message: string }> {
     try {
       // Verificar se a ferramenta está disponível no período
-      const { data: conflicts, error: conflictError } = await supabase
+      const { data: conflicts, error: conflictError } = await db
         .from('tool_reservations')
         .select('*')
         .eq('tool_id', request.toolId)
@@ -32,7 +32,7 @@ class ReservationsApiService {
         return { success: false, message: 'Ferramenta já reservada para este período' };
       }
 
-      const { error } = await supabase
+      const { error } = await db
         .from('tool_reservations')
         .insert({
           tool_id: request.toolId,
@@ -57,9 +57,9 @@ class ReservationsApiService {
   }
 
   // Buscar reservas do usuário
-  async getUserReservations(userId: string): Promise<ToolReservation[]> {
+  async getUserReservations(userId: string): Promise<any[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('tool_reservations')
         .select(`
           *,
@@ -82,9 +82,9 @@ class ReservationsApiService {
   }
 
   // Buscar reservas de uma ferramenta
-  async getToolReservations(toolId: string): Promise<ToolReservation[]> {
+  async getToolReservations(toolId: string): Promise<any[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('tool_reservations')
         .select(`
           *,
@@ -109,7 +109,7 @@ class ReservationsApiService {
   // Cancelar reserva
   async cancelReservation(reservationId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('tool_reservations')
         .update({
           status: 'cancelled',
@@ -132,7 +132,7 @@ class ReservationsApiService {
   // Completar reserva (quando a ferramenta é retirada)
   async completeReservation(reservationId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('tool_reservations')
         .update({
           status: 'completed',
