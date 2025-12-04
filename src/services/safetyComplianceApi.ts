@@ -1,7 +1,7 @@
-
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { UserCertification, ToolSafetyRequirement, SecurityAccessLog } from '@/types/database';
 
+const db = supabase as any;
 export interface SafetyValidationResult {
   allowed: boolean;
   denialReason?: string;

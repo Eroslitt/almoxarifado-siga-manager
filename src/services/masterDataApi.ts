@@ -1,7 +1,7 @@
-
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { SKU, Supplier, StorageLocation, Category, SKUMovement, StockLevel } from '@/types/masterData';
 
+const db = supabase as any;
 class MasterDataApiService {
   // SKU Management
   async createSKU(sku: Omit<SKU, 'id' | 'created_at' | 'updated_at'>): Promise<SKU> {

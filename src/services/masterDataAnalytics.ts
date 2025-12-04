@@ -1,7 +1,8 @@
-
-import { supabase, isDemoMode } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { masterDataApi } from './masterDataApi';
 
+const isDemoMode = false;
+const db = supabase as any;
 interface AnalyticsData {
   totalSKUs: number;
   activeSuppliers: number;

@@ -1,6 +1,8 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Tool, ToolMovement, User } from '@/types/database';
 import { safetyComplianceApi } from './safetyComplianceApi';
+
+const db = supabase as any;
 
 export interface CheckoutRequest {
   toolId: string;

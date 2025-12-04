@@ -1,6 +1,9 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Tool, User, ToolMovement } from '@/types/database';
 import { KittingSuggestion, WorkTemplateWithItems, BatchCheckout } from '@/types/kitting';
+
+// Cast supabase client to bypass type checking for tables not yet in schema
+const db = supabase as any;
 
 export interface WorkTemplate {
   id: string;
@@ -36,39 +39,29 @@ export interface KittingItem {
 }
 
 class KittingApiService {
-  // Work Templates
   async createWorkTemplate(template: Omit<WorkTemplate, 'id' | 'created_at' | 'updated_at'>): Promise<WorkTemplate> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('work_templates')
       .insert(template)
       .select()
       .single();
-
     if (error) throw error;
     return data;
   }
 
   async getWorkTemplates(): Promise<WorkTemplate[]> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('work_templates')
       .select('*')
       .order('name');
-
     if (error) throw error;
     return data || [];
   }
 
-  // New methods for components compatibility
   async getTemplates(filters?: { active?: boolean }): Promise<WorkTemplateWithItems[]> {
-    let query = supabase
+    let query = db
       .from('work_templates')
-      .select(`
-        *,
-        items:work_template_items(
-          *,
-          tool:tools(*)
-        )
-      `)
+      .select(`*, items:work_template_items(*, tool:tools(*))`)
       .order('name');
 
     if (filters?.active) {
@@ -78,8 +71,7 @@ class KittingApiService {
     const { data, error } = await query;
     if (error) throw error;
     
-    // Transform to match expected structure
-    return (data || []).map(template => ({
+    return (data || []).map((template: any) => ({
       ...template,
       active: template.status === 'active',
       estimated_duration_minutes: template.estimated_duration || 60,
@@ -98,17 +90,12 @@ class KittingApiService {
       category: string;
       department: string;
       estimatedDuration: number;
-      items: {
-        toolId: string;
-        quantity: number;
-        priority: 'essential' | 'recommended' | 'optional';
-        notes: string;
-      }[];
+      items: { toolId: string; quantity: number; priority: 'essential' | 'recommended' | 'optional'; notes: string; }[];
     },
     userId: string
   ): Promise<{ success: boolean; message: string }> {
     try {
-      const { data: template, error: templateError } = await supabase
+      const { data: template, error: templateError } = await db
         .from('work_templates')
         .insert({
           name: templateData.name,
@@ -123,9 +110,8 @@ class KittingApiService {
 
       if (templateError) throw templateError;
 
-      // Insert template items
       if (templateData.items.length > 0) {
-        const { error: itemsError } = await supabase
+        const { error: itemsError } = await db
           .from('work_template_items')
           .insert(
             templateData.items.map(item => ({
@@ -136,7 +122,6 @@ class KittingApiService {
               notes: item.notes
             }))
           );
-
         if (itemsError) throw itemsError;
       }
 
@@ -148,58 +133,42 @@ class KittingApiService {
   }
 
   async updateWorkTemplate(id: string, updates: Partial<WorkTemplate>): Promise<WorkTemplate> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('work_templates')
       .update(updates)
       .eq('id', id)
       .select()
       .single();
-
     if (error) throw error;
     return data;
   }
 
   async deleteWorkTemplate(id: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await db
       .from('work_templates')
       .delete()
       .eq('id', id);
-
     if (error) throw error;
   }
 
-  // Kitting Requests
   async createKittingRequest(request: Omit<KittingRequest, 'id' | 'requested_at'>): Promise<KittingRequest> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('kitting_requests')
-      .insert({
-        ...request,
-        requested_at: new Date().toISOString()
-      })
+      .insert({ ...request, requested_at: new Date().toISOString() })
       .select()
       .single();
-
     if (error) throw error;
     return data;
   }
 
   async getKittingRequests(filters?: { status?: string; userId?: string }): Promise<KittingRequest[]> {
-    let query = supabase
+    let query = db
       .from('kitting_requests')
-      .select(`
-        *,
-        work_templates(name, description),
-        users(name, department)
-      `)
+      .select(`*, work_templates(name, description), users(name, department)`)
       .order('requested_at', { ascending: false });
 
-    if (filters?.status) {
-      query = query.eq('status', filters.status);
-    }
-
-    if (filters?.userId) {
-      query = query.eq('user_id', filters.userId);
-    }
+    if (filters?.status) query = query.eq('status', filters.status);
+    if (filters?.userId) query = query.eq('user_id', filters.userId);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -207,69 +176,47 @@ class KittingApiService {
   }
 
   async updateKittingRequestStatus(id: string, status: KittingRequest['status']): Promise<KittingRequest> {
-    const statusTimestamp = {
-      prepared: 'prepared_at',
-      delivered: 'delivered_at',
-      returned: 'returned_at'
-    }[status];
-
+    const statusTimestamp: any = { prepared: 'prepared_at', delivered: 'delivered_at', returned: 'returned_at' }[status];
     const updates: any = { status };
-    if (statusTimestamp) {
-      updates[statusTimestamp] = new Date().toISOString();
-    }
+    if (statusTimestamp) updates[statusTimestamp] = new Date().toISOString();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('kitting_requests')
       .update(updates)
       .eq('id', id)
       .select()
       .single();
-
     if (error) throw error;
     return data;
   }
 
-  // Kitting Items
   async getKittingItems(requestId: string): Promise<KittingItem[]> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('kitting_items')
-      .select(`
-        *,
-        tools(name, status, location)
-      `)
+      .select(`*, tools(name, status, location)`)
       .eq('kitting_request_id', requestId);
-
     if (error) throw error;
     return data || [];
   }
 
   async updateKittingItemStatus(id: string, status: KittingItem['status'], conditionNote?: string): Promise<KittingItem> {
     const updates: any = { status };
-    if (conditionNote) {
-      updates.condition_note = conditionNote;
-    }
-    if (status === 'collected') {
-      updates.collected_at = new Date().toISOString();
-    }
+    if (conditionNote) updates.condition_note = conditionNote;
+    if (status === 'collected') updates.collected_at = new Date().toISOString();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('kitting_items')
       .update(updates)
       .eq('id', id)
       .select()
       .single();
-
     if (error) throw error;
     return data;
   }
 
-  // Batch Checkout Methods
-  async startBatchCheckout(params: {
-    templateId?: string;
-    workType: string;
-  }, userId: string): Promise<{ success: boolean; batchId?: string; message: string }> {
+  async startBatchCheckout(params: { templateId?: string; workType: string; }, userId: string): Promise<{ success: boolean; batchId?: string; message: string }> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('batch_checkouts')
         .insert({
           template_id: params.templateId || null,
@@ -282,7 +229,6 @@ class KittingApiService {
         })
         .select()
         .single();
-
       if (error) throw error;
       return { success: true, batchId: data.id, message: 'Batch iniciado' };
     } catch (error) {
@@ -293,15 +239,9 @@ class KittingApiService {
 
   async addBatchItem(batchId: string, toolId: string, priority: 'essential' | 'recommended' | 'optional'): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('batch_checkout_items')
-        .insert({
-          batch_id: batchId,
-          tool_id: toolId,
-          status: 'pending',
-          priority: priority
-        });
-
+        .insert({ batch_id: batchId, tool_id: toolId, status: 'pending', priority: priority });
       if (error) throw error;
       return { success: true, message: 'Item adicionado' };
     } catch (error) {
@@ -312,15 +252,11 @@ class KittingApiService {
 
   async processBatchItem(batchId: string, toolId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('batch_checkout_items')
-        .update({
-          status: 'checked-out',
-          checkout_at: new Date().toISOString()
-        })
+        .update({ status: 'checked-out', checkout_at: new Date().toISOString() })
         .eq('batch_id', batchId)
         .eq('tool_id', toolId);
-
       if (error) throw error;
       return { success: true, message: 'Item processado' };
     } catch (error) {
@@ -331,14 +267,10 @@ class KittingApiService {
 
   async completeBatchCheckout(batchId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('batch_checkouts')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString()
-        })
+        .update({ status: 'completed', completed_at: new Date().toISOString() })
         .eq('id', batchId);
-
       if (error) throw error;
       return { success: true, message: 'Batch completado' };
     } catch (error) {
@@ -347,24 +279,18 @@ class KittingApiService {
     }
   }
 
-  // Analytics and Suggestions
   async getKittingAnalytics(days: number = 30): Promise<any> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const { data: requests, error } = await supabase
+    const { data: requests, error } = await db
       .from('kitting_requests')
-      .select(`
-        *,
-        work_templates(name, department)
-      `)
+      .select(`*, work_templates(name, department)`)
       .gte('requested_at', startDate.toISOString());
-
     if (error) throw error;
 
-    // Calculate metrics
     const totalRequests = requests?.length || 0;
-    const completedRequests = requests?.filter(r => r.status === 'returned').length || 0;
+    const completedRequests = requests?.filter((r: any) => r.status === 'returned').length || 0;
     const avgCompletionTime = this.calculateAverageCompletionTime(requests || []);
     const departmentUsage = this.calculateDepartmentUsage(requests || []);
 
@@ -380,14 +306,12 @@ class KittingApiService {
   private calculateAverageCompletionTime(requests: any[]): number {
     const completed = requests.filter(r => r.returned_at && r.requested_at);
     if (completed.length === 0) return 0;
-
     const totalTime = completed.reduce((sum, request) => {
       const start = new Date(request.requested_at).getTime();
       const end = new Date(request.returned_at).getTime();
       return sum + (end - start);
     }, 0);
-
-    return Math.round(totalTime / completed.length / (1000 * 60 * 60)); // hours
+    return Math.round(totalTime / completed.length / (1000 * 60 * 60));
   }
 
   private calculateDepartmentUsage(requests: any[]): Record<string, number> {
@@ -399,56 +323,32 @@ class KittingApiService {
     return usage;
   }
 
-  async generateSuggestions(
-    workType: string,
-    userId: string,
-    templateId?: string
-  ): Promise<KittingSuggestion[]> {
+  async generateSuggestions(workType: string, userId: string, templateId?: string): Promise<KittingSuggestion[]> {
     try {
-      // Get user's recent tool usage
-      const { data: recentMovements } = await supabase
+      const { data: recentMovements } = await db
         .from('tool_movements')
-        .select(`
-          tool_id,
-          tool:tools(name, status, location)
-        `)
+        .select(`tool_id, tool:tools(name, status, location)`)
         .eq('user_id', userId)
         .eq('action', 'checkout')
         .order('timestamp', { ascending: false })
         .limit(10);
 
       if (!recentMovements || recentMovements.length === 0) {
-        return [{
-          toolId: 'demo-tool-1',
-          toolName: 'Ferramenta Demo',
-          priority: 'recommended',
-          confidence: 0.8,
-          reason: 'Sugestão baseada no tipo de trabalho',
-          available: true,
-          location: 'A-01-01-A'
-        }];
+        return [{ toolId: 'demo-tool-1', toolName: 'Ferramenta Demo', priority: 'recommended', confidence: 0.8, reason: 'Sugestão baseada no tipo de trabalho', available: true, location: 'A-01-01-A' }];
       }
 
       const suggestions: KittingSuggestion[] = [];
-
-      // Analyze patterns
       const toolFrequency: Record<string, number> = {};
-      recentMovements.forEach(movement => {
-        // Handle both single object and array cases from Supabase
+      recentMovements.forEach((movement: any) => {
         const tool = Array.isArray(movement.tool) ? movement.tool[0] : movement.tool;
         if (tool && tool.name) {
-          const toolName = tool.name;
-          toolFrequency[toolName] = (toolFrequency[toolName] || 0) + 1;
+          toolFrequency[tool.name] = (toolFrequency[tool.name] || 0) + 1;
         }
       });
 
-      // Generate suggestions based on frequency
-      const mostUsed = Object.entries(toolFrequency)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 3);
-
+      const mostUsed = Object.entries(toolFrequency).sort(([,a], [,b]) => b - a).slice(0, 3);
       mostUsed.forEach(([toolName], index) => {
-        const movement = recentMovements.find(m => {
+        const movement = recentMovements.find((m: any) => {
           const tool = Array.isArray(m.tool) ? m.tool[0] : m.tool;
           return tool?.name === toolName;
         });
@@ -466,50 +366,11 @@ class KittingApiService {
         }
       });
 
-      return suggestions.length > 0 ? suggestions : [{
-        toolId: 'demo-tool-1',
-        toolName: 'Ferramenta Demo',
-        priority: 'recommended',
-        confidence: 0.7,
-        reason: 'Sugestão baseada no padrão de uso',
-        available: true,
-        location: 'A-01-01-A'
-      }];
+      return suggestions.length > 0 ? suggestions : [{ toolId: 'demo-tool-1', toolName: 'Ferramenta Demo', priority: 'recommended', confidence: 0.7, reason: 'Sugestão baseada no padrão de uso', available: true, location: 'A-01-01-A' }];
     } catch (error) {
       console.error('Error generating suggestions:', error);
-      return [{
-        toolId: 'error-tool',
-        toolName: 'Erro ao gerar sugestões',
-        priority: 'optional',
-        confidence: 0.5,
-        reason: 'Erro no sistema',
-        available: false,
-        location: 'N/A'
-      }];
+      return [{ toolId: 'error-tool', toolName: 'Erro ao gerar sugestões', priority: 'optional', confidence: 0.5, reason: 'Erro no sistema', available: false, location: 'N/A' }];
     }
-  }
-
-  private findCommonCombinations(movements: any[]): string[][] {
-    // Simple algorithm to find tools used within the same day
-    const dailyUsage: Record<string, string[]> = {};
-    
-    movements.forEach(movement => {
-      const tool = Array.isArray(movement.tool) ? movement.tool[0] : movement.tool;
-      if (tool) {
-        const date = new Date(movement.timestamp).toDateString();
-        if (!dailyUsage[date]) dailyUsage[date] = [];
-        dailyUsage[date].push(tool.name);
-      }
-    });
-
-    const combinations: string[][] = [];
-    Object.values(dailyUsage).forEach(tools => {
-      if (tools.length > 1) {
-        combinations.push([...new Set(tools)]); // Remove duplicates
-      }
-    });
-
-    return combinations.slice(0, 2); // Return top 2 combinations
   }
 }
 
