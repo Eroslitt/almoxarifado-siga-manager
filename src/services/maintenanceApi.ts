@@ -1,7 +1,7 @@
-
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { MaintenanceSchedule } from '@/types/database';
 
+const db = supabase as any;
 export interface CreateMaintenanceRequest {
   toolId: string;
   type: MaintenanceSchedule['type'];

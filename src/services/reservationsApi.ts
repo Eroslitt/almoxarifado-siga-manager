@@ -1,7 +1,7 @@
-
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { ToolReservation } from '@/types/database';
 
+const db = supabase as any;
 export interface CreateReservationRequest {
   toolId: string;
   userId: string;
