@@ -1,13 +1,12 @@
-import { supabase } from '@/integrations/supabase/client';
-import { SKU, Supplier, StorageLocation, Category, SKUMovement, StockLevel } from '@/types/masterData';
 
-const db = supabase as any;
+import { supabase } from '@/lib/supabase';
+import { SKU, Supplier, StorageLocation, Category, SKUMovement, StockLevel } from '@/types/masterData';
 
 class MasterDataApiService {
   // SKU Management
-  async createSKU(sku: Omit<SKU, 'id' | 'created_at' | 'updated_at'>): Promise<any> {
+  async createSKU(sku: Omit<SKU, 'id' | 'created_at' | 'updated_at'>): Promise<SKU> {
     // Validate unique SKU code
-    const { data: existing } = await db
+    const { data: existing } = await supabase
       .from('skus')
       .select('id')
       .eq('sku_code', sku.sku_code)
@@ -17,7 +16,7 @@ class MasterDataApiService {
       throw new Error(`SKU code ${sku.sku_code} already exists`);
     }
 
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from('skus')
       .insert({
         ...sku,
@@ -36,8 +35,8 @@ class MasterDataApiService {
     status?: string; 
     search?: string;
     classification?: 'A' | 'B' | 'C';
-  }): Promise<any[]> {
-    let query = db
+  }): Promise<SKU[]> {
+    let query = supabase
       .from('skus')
       .select(`
         *,
@@ -67,8 +66,8 @@ class MasterDataApiService {
     return data || [];
   }
 
-  async updateSKU(id: string, updates: Partial<SKU>): Promise<any> {
-    const { data, error } = await db
+  async updateSKU(id: string, updates: Partial<SKU>): Promise<SKU> {
+    const { data, error } = await supabase
       .from('skus')
       .update({
         ...updates,
@@ -84,7 +83,7 @@ class MasterDataApiService {
 
   async deleteSKU(id: string): Promise<void> {
     // Check if SKU has movements
-    const { data: movements } = await db
+    const { data: movements } = await supabase
       .from('sku_movements')
       .select('id')
       .eq('sku_id', id)
@@ -94,7 +93,7 @@ class MasterDataApiService {
       throw new Error('Cannot delete SKU with existing movements. Set status to inactive instead.');
     }
 
-    const { error } = await db
+    const { error } = await supabase
       .from('skus')
       .delete()
       .eq('id', id);
@@ -103,9 +102,9 @@ class MasterDataApiService {
   }
 
   // Supplier Management
-  async createSupplier(supplier: Omit<Supplier, 'id' | 'created_at' | 'updated_at'>): Promise<any> {
+  async createSupplier(supplier: Omit<Supplier, 'id' | 'created_at' | 'updated_at'>): Promise<Supplier> {
     // Validate unique CNPJ
-    const { data: existing } = await db
+    const { data: existing } = await supabase
       .from('suppliers')
       .select('id')
       .eq('cnpj', supplier.cnpj)
@@ -115,7 +114,7 @@ class MasterDataApiService {
       throw new Error(`CNPJ ${supplier.cnpj} already exists`);
     }
 
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from('suppliers')
       .insert({
         ...supplier,
@@ -129,8 +128,8 @@ class MasterDataApiService {
     return data;
   }
 
-  async getSuppliers(filters?: { status?: string; search?: string }): Promise<any[]> {
-    let query = db
+  async getSuppliers(filters?: { status?: string; search?: string }): Promise<Supplier[]> {
+    let query = supabase
       .from('suppliers')
       .select('*')
       .order('company_name');
@@ -148,8 +147,8 @@ class MasterDataApiService {
     return data || [];
   }
 
-  async updateSupplier(id: string, updates: Partial<Supplier>): Promise<any> {
-    const { data, error } = await db
+  async updateSupplier(id: string, updates: Partial<Supplier>): Promise<Supplier> {
+    const { data, error } = await supabase
       .from('suppliers')
       .update({
         ...updates,
@@ -164,9 +163,9 @@ class MasterDataApiService {
   }
 
   // Storage Location Management
-  async createStorageLocation(location: Omit<StorageLocation, 'id' | 'created_at' | 'updated_at'>): Promise<any> {
+  async createStorageLocation(location: Omit<StorageLocation, 'id' | 'created_at' | 'updated_at'>): Promise<StorageLocation> {
     // Validate unique location code
-    const { data: existing } = await db
+    const { data: existing } = await supabase
       .from('storage_locations')
       .select('id')
       .eq('code', location.code)
@@ -176,7 +175,7 @@ class MasterDataApiService {
       throw new Error(`Location code ${location.code} already exists`);
     }
 
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from('storage_locations')
       .insert({
         ...location,
@@ -194,8 +193,8 @@ class MasterDataApiService {
     zone?: string; 
     status?: string; 
     street?: string;
-  }): Promise<any[]> {
-    let query = db
+  }): Promise<StorageLocation[]> {
+    let query = supabase
       .from('storage_locations')
       .select('*')
       .order('code');
@@ -218,8 +217,8 @@ class MasterDataApiService {
   }
 
   // Category Management
-  async createCategory(category: Omit<Category, 'id' | 'created_at' | 'updated_at'>): Promise<any> {
-    const { data, error } = await db
+  async createCategory(category: Omit<Category, 'id' | 'created_at' | 'updated_at'>): Promise<Category> {
+    const { data, error } = await supabase
       .from('categories')
       .insert({
         ...category,
@@ -233,8 +232,8 @@ class MasterDataApiService {
     return data;
   }
 
-  async getCategories(includeSubcategories: boolean = true): Promise<any[]> {
-    let query = db
+  async getCategories(includeSubcategories: boolean = true): Promise<Category[]> {
+    let query = supabase
       .from('categories')
       .select('*')
       .order('name');
@@ -253,8 +252,8 @@ class MasterDataApiService {
     skuId?: string; 
     locationId?: string;
     lowStock?: boolean;
-  }): Promise<any[]> {
-    let query = db
+  }): Promise<StockLevel[]> {
+    let query = supabase
       .from('stock_levels')
       .select(`
         *,
@@ -277,7 +276,7 @@ class MasterDataApiService {
 
     // Filter for low stock if requested
     if (filters?.lowStock) {
-      result = result.filter((level: any) => {
+      result = result.filter(level => {
         const sku = level.skus;
         return sku && level.current_quantity <= sku.min_stock;
       });
@@ -287,8 +286,8 @@ class MasterDataApiService {
   }
 
   // Movement Management
-  async createMovement(movement: Omit<SKUMovement, 'id' | 'created_at'>): Promise<any> {
-    const { data, error } = await db
+  async createMovement(movement: Omit<SKUMovement, 'id' | 'created_at'>): Promise<SKUMovement> {
+    const { data, error } = await supabase
       .from('sku_movements')
       .insert({
         ...movement,
@@ -312,7 +311,7 @@ class MasterDataApiService {
     movementType: string
   ): Promise<void> {
     // Get current stock level
-    const { data: currentLevel } = await db
+    const { data: currentLevel } = await supabase
       .from('stock_levels')
       .select('*')
       .eq('sku_id', skuId)
@@ -324,7 +323,7 @@ class MasterDataApiService {
     if (currentLevel) {
       // Update existing level
       const newQuantity = Math.max(0, currentLevel.current_quantity + quantityChange);
-      await db
+      await supabase
         .from('stock_levels')
         .update({
           current_quantity: newQuantity,
@@ -336,7 +335,7 @@ class MasterDataApiService {
     } else {
       // Create new stock level
       const newQuantity = Math.max(0, quantityChange);
-      await db
+      await supabase
         .from('stock_levels')
         .insert({
           sku_id: skuId,
@@ -353,9 +352,9 @@ class MasterDataApiService {
   // Analytics
   async getStockAnalytics(): Promise<any> {
     const [skusResult, suppliersResult, locationsResult, lowStockResult] = await Promise.all([
-      db.from('skus').select('id', { count: 'exact' }),
-      db.from('suppliers').select('id', { count: 'exact' }).eq('status', 'active'),
-      db.from('storage_locations').select('id', { count: 'exact' }),
+      supabase.from('skus').select('id', { count: 'exact' }),
+      supabase.from('suppliers').select('id', { count: 'exact' }).eq('status', 'active'),
+      supabase.from('storage_locations').select('id', { count: 'exact' }),
       this.getStockLevels({ lowStock: true })
     ]);
 

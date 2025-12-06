@@ -1,224 +1,219 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { User, Session } from '@supabase/supabase-js';
+
+import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
-  signOut: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
-  }
-  return context;
-};
+import { isDemoMode } from '@/lib/supabase';
+import { User as SupabaseUser } from '@supabase/supabase-js';
+import { User } from '@/types/database';
+import { AuthContext } from '@/contexts/AuthContext';
 
 interface AuthProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-  const location = useLocation();
+  console.log('🔄 AuthProvider rendering...');
+  
+  const [user, setUser] = React.useState<User | null>(null);
+  const [supabaseUser, setSupabaseUser] = React.useState<SupabaseUser | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Handle profile creation/loading after auth state change
-        if (session?.user && event === 'SIGNED_IN') {
-          setTimeout(() => {
-            loadUserProfile(session.user.id);
-          }, 0);
-        }
-      }
-    );
-
-    // THEN check for existing session
+  React.useEffect(() => {
     const initAuth = async () => {
       try {
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting session:', error);
-          setSession(null);
-          setUser(null);
-        } else {
-          setSession(currentSession);
-          setUser(currentSession?.user ?? null);
+        if (isDemoMode) {
+          // Demo mode - use mock user
+          const mockUser: User = {
+            id: 'demo-user-123',
+            email: 'demo@siga.com',
+            name: 'Demo User',
+            department: 'Almoxarifado',
+            role: 'administrator',
+            active: true,
+            notification_preferences: { email: true, push: true },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+
+          const mockSupabaseUser = {
+            id: 'demo-user-123',
+            email: 'demo@siga.com',
+            user_metadata: {
+              name: 'Demo User',
+              department: 'Almoxarifado'
+            },
+            app_metadata: {},
+            aud: 'authenticated',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as SupabaseUser;
+
+          setUser(mockUser);
+          setSupabaseUser(mockSupabaseUser);
+          setLoading(false);
           
-          if (currentSession?.user) {
-            setTimeout(() => {
-              loadUserProfile(currentSession.user.id);
-            }, 0);
-          }
+          console.log('✅ Demo authentication initialized');
+          return;
         }
+
+        // Real Supabase mode
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          setSupabaseUser(session.user);
+          await loadUserProfile(session.user.id);
+        }
+        
+        setLoading(false);
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log('Auth state changed:', event, session?.user?.email);
+          
+          if (session?.user) {
+            setSupabaseUser(session.user);
+            await loadUserProfile(session.user.id);
+          } else {
+            setSupabaseUser(null);
+            setUser(null);
+          }
+          
+          setLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
       } catch (error) {
-        console.error('Error in initAuth:', error);
-        setSession(null);
-        setUser(null);
-      } finally {
+        console.error('Error initializing auth:', error);
         setLoading(false);
       }
     };
 
     initAuth();
-
-    return () => subscription.unsubscribe();
   }, []);
-
-  // Redirect logic based on auth state
-  useEffect(() => {
-    if (!loading) {
-      const isAuthPage = location.pathname === '/auth';
-      
-      if (!session && !isAuthPage) {
-        // Not authenticated and not on auth page -> redirect to auth
-        navigate('/auth');
-      } else if (session && isAuthPage) {
-        // Authenticated and on auth page -> redirect to main app
-        navigate('/');
-      }
-    }
-  }, [session, loading, location.pathname, navigate]);
 
   const loadUserProfile = async (userId: string) => {
     try {
-      const { data: profile, error } = await supabase
+      if (isDemoMode) {
+        // Demo mode - return mock user
+        const mockUser: User = {
+          id: userId,
+          email: 'demo@siga.com',
+          name: 'Demo User',
+          department: 'Almoxarifado',
+          role: 'administrator',
+          active: true,
+          notification_preferences: { email: true, push: true },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        setUser(mockUser);
+        return;
+      }
+
+      // Try to get from profiles table first
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
-        .maybeSingle();
+        .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading profile:', error);
+      if (profileData) {
+        // Convert profile data to User format
+        const userData: User = {
+          id: profileData.user_id,
+          email: supabaseUser?.email || '',
+          name: profileData.full_name || 'Usuário',
+          department: 'Usuário',
+          role: 'operator',
+          active: true,
+          notification_preferences: { email: true, push: true },
+          created_at: profileData.created_at,
+          updated_at: profileData.updated_at
+        };
+        setUser(userData);
         return;
       }
 
       // If no profile exists, create one
-      if (!profile) {
-        const { data: userData } = await supabase.auth.getUser();
-        const user = userData.user;
-        
-        if (user) {
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              user_id: userId,
-              full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
-              company_name: user.user_metadata?.company_name || 'Empresa',
-              phone: user.user_metadata?.phone || null,
-              subscription_status: 'inactive'
-            });
+      if (supabaseUser) {
+        const newProfile = {
+          user_id: userId,
+          full_name: supabaseUser.user_metadata?.full_name || 'Usuário'
+        };
 
-          if (insertError) {
-            console.error('Error creating profile:', insertError);
-          } else {
-            console.log('Profile created successfully');
-          }
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert(newProfile);
+
+        if (!insertError) {
+          const userData: User = {
+            id: userId,
+            email: supabaseUser.email || '',
+            name: newProfile.full_name,
+            department: 'Usuário',
+            role: 'operator',
+            active: true,
+            notification_preferences: { email: true, push: true },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          setUser(userData);
         }
       }
     } catch (error) {
-      console.error('Error in loadUserProfile:', error);
+      console.error('Erro ao carregar perfil:', error);
     }
   };
 
   const signIn = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {
-      setLoading(true);
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
+      if (isDemoMode) {
+        // Demo mode - always succeed
+        return { success: true, message: 'Login realizado com sucesso (modo demo)' };
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        let message = 'Erro ao fazer login';
-        
-        if (error.message.includes('Invalid login credentials')) {
-          message = 'Email ou senha incorretos';
-        } else if (error.message.includes('Email not confirmed')) {
-          message = 'Por favor, confirme seu email antes de fazer login';
-        } else if (error.message.includes('Too many requests')) {
-          message = 'Muitas tentativas. Tente novamente em alguns minutos';
-        } else {
-          message = error.message;
-        }
-        
-        return { success: false, message };
+        console.error('Erro no login:', error);
+        return { success: false, message: error.message };
       }
 
-      if (data.user) {
-        toast.success('Login realizado com sucesso!');
-        return { success: true, message: 'Login realizado com sucesso!' };
-      }
-
-      return { success: false, message: 'Erro inesperado ao fazer login' };
+      return { success: true, message: 'Login realizado com sucesso' };
     } catch (error) {
-      console.error('Error in signIn:', error);
-      return { success: false, message: 'Erro inesperado ao fazer login' };
-    } finally {
-      setLoading(false);
+      console.error('Erro no login:', error);
+      return { success: false, message: 'Erro interno do servidor' };
     }
   };
 
-  const signOut = async (): Promise<void> => {
+  const signOut = async () => {
     try {
-      setLoading(true);
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('Error signing out:', error);
-        toast.error('Erro ao fazer logout');
-      } else {
-        setSession(null);
+      if (isDemoMode) {
+        // Demo mode - just clear state
         setUser(null);
-        toast.success('Logout realizado com sucesso!');
-        navigate('/auth');
+        setSupabaseUser(null);
+        console.log('Demo logout successful');
+        return;
+      }
+
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Erro no logout:', error);
       }
     } catch (error) {
-      console.error('Error in signOut:', error);
-      toast.error('Erro inesperado ao fazer logout');
-    } finally {
-      setLoading(false);
+      console.error('Erro no logout:', error);
     }
   };
 
-  const contextValue: AuthContextType = {
+  const contextValue = {
     user,
-    session,
+    supabaseUser,
     loading,
     signIn,
-    signOut,
+    signOut
   };
-
-  // Show loading spinner while initializing auth
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <AuthContext.Provider value={contextValue}>

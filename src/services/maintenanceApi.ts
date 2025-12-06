@@ -1,7 +1,6 @@
-import { supabase } from '@/integrations/supabase/client';
-import { MaintenanceSchedule } from '@/types/database';
 
-const db = supabase as any;
+import { supabase } from '@/lib/supabase';
+import { MaintenanceSchedule } from '@/types/database';
 
 export interface CreateMaintenanceRequest {
   toolId: string;
@@ -15,7 +14,7 @@ class MaintenanceApiService {
   // Agendar manutenção
   async scheduleMaintenanceService(request: CreateMaintenanceRequest): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await db
+      const { error } = await supabase
         .from('maintenance_schedules')
         .insert({
           tool_id: request.toolId,
@@ -39,9 +38,9 @@ class MaintenanceApiService {
   }
 
   // Buscar manutenções agendadas
-  async getScheduledMaintenance(): Promise<any[]> {
+  async getScheduledMaintenance(): Promise<MaintenanceSchedule[]> {
     try {
-      const { data, error } = await db
+      const { data, error } = await supabase
         .from('maintenance_schedules')
         .select(`
           *,
@@ -66,7 +65,7 @@ class MaintenanceApiService {
   // Iniciar manutenção
   async startMaintenance(maintenanceId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await db
+      const { error } = await supabase
         .from('maintenance_schedules')
         .update({
           status: 'in-progress',
@@ -94,7 +93,7 @@ class MaintenanceApiService {
     partsUsed?: any
   ): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await db
+      const { error } = await supabase
         .from('maintenance_schedules')
         .update({
           status: 'completed',
@@ -121,9 +120,10 @@ class MaintenanceApiService {
   // Verificar manutenções preventivas necessárias
   async checkPreventiveMaintenance(): Promise<void> {
     try {
-      const { data: tools, error } = await db
+      const { data: tools, error } = await supabase
         .from('tools')
         .select('*')
+        .gt('usage_hours', 0)
         .neq('status', 'inactive');
 
       if (error) {
@@ -133,12 +133,9 @@ class MaintenanceApiService {
 
       for (const tool of tools || []) {
         // Verificar se a ferramenta precisa de manutenção preventiva
-        const usageHours = tool.usage_hours || 0;
-        const maintenanceInterval = tool.maintenance_interval_hours || tool.maintenance_interval_days * 24 || 1000;
-        
-        if (usageHours >= maintenanceInterval) {
+        if (tool.usage_hours >= tool.maintenance_interval_hours) {
           // Verificar se já não há manutenção agendada
-          const { data: existing } = await db
+          const { data: existing } = await supabase
             .from('maintenance_schedules')
             .select('id')
             .eq('tool_id', tool.id)
@@ -148,13 +145,13 @@ class MaintenanceApiService {
           if (!existing || existing.length === 0) {
             // Agendar manutenção preventiva
             const scheduledDate = new Date();
-            scheduledDate.setDate(scheduledDate.getDate() + 7);
+            scheduledDate.setDate(scheduledDate.getDate() + 7); // Agendar para daqui a 7 dias
 
             await this.scheduleMaintenanceService({
               toolId: tool.id,
               type: 'preventive',
               scheduledDate: scheduledDate.toISOString(),
-              notes: `Manutenção preventiva automática - ${usageHours}h de uso`
+              notes: `Manutenção preventiva automática - ${tool.usage_hours}h de uso`
             });
           }
         }

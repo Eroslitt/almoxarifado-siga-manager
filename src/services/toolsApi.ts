@@ -1,7 +1,6 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
+import { Tool, ToolMovement, User } from '@/types/database';
 import { safetyComplianceApi } from './safetyComplianceApi';
-
-const db = supabase as any;
 
 export interface CheckoutRequest {
   toolId: string;
@@ -41,7 +40,7 @@ class ToolsApiService {
       }
 
       // Verificar se a ferramenta está disponível
-      const { data: tool, error: toolError } = await db
+      const { data: tool, error: toolError } = await supabase
         .from('tools')
         .select('*')
         .eq('id', request.toolId)
@@ -56,7 +55,7 @@ class ToolsApiService {
       }
 
       // Atualizar status da ferramenta
-      const { error: updateError } = await db
+      const { error: updateError } = await supabase
         .from('tools')
         .update({
           status: 'in-use',
@@ -71,7 +70,7 @@ class ToolsApiService {
       }
 
       // Registrar movimentação
-      const { error: movementError } = await db
+      const { error: movementError } = await supabase
         .from('tool_movements')
         .insert({
           tool_id: request.toolId,
@@ -98,7 +97,7 @@ class ToolsApiService {
       console.log('Fazendo checkin da ferramenta:', request);
 
       // Verificar se a ferramenta está em uso
-      const { data: tool, error: toolError } = await db
+      const { data: tool, error: toolError } = await supabase
         .from('tools')
         .select('*')
         .eq('id', request.toolId)
@@ -116,7 +115,7 @@ class ToolsApiService {
       const newStatus = request.hasIssue ? 'maintenance' : 'available';
 
       // Atualizar status da ferramenta
-      const { error: updateError } = await db
+      const { error: updateError } = await supabase
         .from('tools')
         .update({
           status: newStatus,
@@ -131,7 +130,7 @@ class ToolsApiService {
       }
 
       // Registrar movimentação
-      const { error: movementError } = await db
+      const { error: movementError } = await supabase
         .from('tool_movements')
         .insert({
           tool_id: request.toolId,
@@ -158,9 +157,9 @@ class ToolsApiService {
   }
 
   // Listar ferramentas com filtros
-  async getTools(filters: ToolsFilters = {}): Promise<{ data: any[]; total: number }> {
+  async getTools(filters: ToolsFilters = {}): Promise<{ data: Tool[]; total: number }> {
     try {
-      let query = db
+      let query = supabase
         .from('tools')
         .select('*', { count: 'exact' });
 
@@ -200,9 +199,9 @@ class ToolsApiService {
   }
 
   // Buscar histórico de uma ferramenta
-  async getToolHistory(toolId: string): Promise<any[]> {
+  async getToolHistory(toolId: string): Promise<ToolMovement[]> {
     try {
-      const { data, error } = await db
+      const { data, error } = await supabase
         .from('tool_movements')
         .select(`
           *,
@@ -224,9 +223,9 @@ class ToolsApiService {
   }
 
   // Atualizar status de uma ferramenta
-  async updateToolStatus(toolId: string, status: string): Promise<{ success: boolean; message: string }> {
+  async updateToolStatus(toolId: string, status: Tool['status']): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await db
+      const { error } = await supabase
         .from('tools')
         .update({
           status,
@@ -255,7 +254,7 @@ class ToolsApiService {
     maintenance: number;
   }> {
     try {
-      const { data, error } = await db
+      const { data, error } = await supabase
         .from('tools')
         .select('status');
 
@@ -266,9 +265,9 @@ class ToolsApiService {
 
       const stats = {
         total: data?.length || 0,
-        available: data?.filter((t: any) => t.status === 'available').length || 0,
-        inUse: data?.filter((t: any) => t.status === 'in-use').length || 0,
-        maintenance: data?.filter((t: any) => t.status === 'maintenance').length || 0
+        available: data?.filter(t => t.status === 'available').length || 0,
+        inUse: data?.filter(t => t.status === 'in-use').length || 0,
+        maintenance: data?.filter(t => t.status === 'maintenance').length || 0
       };
 
       return stats;

@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 import { LogIn, UserPlus, LogOut, User } from 'lucide-react';
 
 interface AuthButtonProps {
@@ -20,7 +20,7 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  
+  const { toast } = useToast();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,15 +42,20 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
       }
 
       console.log('✅ Login bem-sucedido');
-      toast.success("Sucesso!", { description: "Login realizado com sucesso." });
+      toast({
+        title: "Sucesso!",
+        description: "Login realizado com sucesso.",
+      });
 
       setIsOpen(false);
       resetForm();
       onAuthChange();
     } catch (error: any) {
       console.error('🔴 Erro capturado no login:', error);
-      toast.error("Erro no login", {
+      toast({
+        title: "Erro no login",
         description: error.message || "Erro ao fazer login",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -90,11 +95,13 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
       console.log('✅ Signup bem-sucedido');
 
       if (data.user && !data.user.email_confirmed_at) {
-        toast.success("Cadastro realizado!", {
+        toast({
+          title: "Cadastro realizado!",
           description: "Verifique seu email para confirmar a conta.",
         });
       } else if (data.user && data.user.email_confirmed_at) {
-        toast.success("Cadastro realizado!", {
+        toast({
+          title: "Cadastro realizado!",
           description: "Conta criada e confirmada com sucesso!",
         });
         onAuthChange();
@@ -115,8 +122,10 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
         errorMessage = "Email inválido. Verifique e tente novamente.";
       }
       
-      toast.error("Erro no cadastro", {
+      toast({
+        title: "Erro no cadastro",
         description: errorMessage,
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -128,14 +137,17 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      toast.success("Logout realizado", {
+      toast({
+        title: "Logout realizado",
         description: "Você foi desconectado com sucesso.",
       });
       
       onAuthChange();
     } catch (error: any) {
-      toast.error("Erro", {
+      toast({
+        title: "Erro",
         description: error.message || "Erro ao fazer logout",
+        variant: "destructive",
       });
     }
   };

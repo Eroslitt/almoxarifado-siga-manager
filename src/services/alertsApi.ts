@@ -1,8 +1,6 @@
-import { supabase } from '@/integrations/supabase/client';
-import { Alert } from '@/types/database';
 
-// Cast supabase client to bypass type checking for tables not yet in schema
-const db = supabase as any;
+import { supabase } from '@/lib/supabase';
+import { Alert } from '@/types/database';
 
 export interface CreateAlertRequest {
   type: Alert['type'];
@@ -17,7 +15,7 @@ class AlertsApiService {
   // Buscar alertas ativos
   async getActiveAlerts(): Promise<Alert[]> {
     try {
-      const { data, error } = await db
+      const { data, error } = await supabase
         .from('alerts')
         .select(`
           *,
@@ -43,7 +41,7 @@ class AlertsApiService {
   // Criar novo alerta
   async createAlert(request: CreateAlertRequest): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await db
+      const { error } = await supabase
         .from('alerts')
         .insert({
           type: request.type,
@@ -70,7 +68,7 @@ class AlertsApiService {
   // Marcar alerta como confirmado
   async acknowledgeAlert(alertId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await db
+      const { error } = await supabase
         .from('alerts')
         .update({
           status: 'acknowledged',
@@ -93,7 +91,7 @@ class AlertsApiService {
   // Resolver alerta
   async resolveAlert(alertId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await db
+      const { error } = await supabase
         .from('alerts')
         .update({
           status: 'resolved',
@@ -117,7 +115,7 @@ class AlertsApiService {
   async checkOverdueTools(): Promise<void> {
     try {
       // Buscar ferramentas em uso há mais de 24 horas
-      const { data: overdueTools, error } = await db
+      const { data: overdueTools, error } = await supabase
         .from('tool_movements')
         .select(`
           *,

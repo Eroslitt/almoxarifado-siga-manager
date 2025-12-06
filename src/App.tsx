@@ -1,22 +1,24 @@
-import { Suspense, lazy } from "react";
+
+import React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
+import Subscription from "./pages/Subscription";
+import NotFound from "./pages/NotFound";
 
-const Index = lazy(() => import("./pages/Index"));
-const Subscription = lazy(() => import("./pages/Subscription"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const queryClient = new QueryClient();
 
-function App() {
-  return (
+const App = () => (
+  <QueryClientProvider client={queryClient}>
     <BrowserRouter>
-      <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Carregando...</div>}>
-        <Routes>
-          <Route path="/*" element={<Index />} />
-          <Route path="/subscription" element={<Subscription />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/subscription" element={<Subscription />} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </BrowserRouter>
-  );
-}
+  </QueryClientProvider>
+);
 
 export default App;

@@ -1,8 +1,6 @@
-import { supabase } from '@/integrations/supabase/client';
-import { masterDataApi } from './masterDataApi';
 
-const isDemoMode = false;
-const db = supabase as any;
+import { supabase, isDemoMode } from '@/lib/supabase';
+import { masterDataApi } from './masterDataApi';
 
 interface AnalyticsData {
   totalSKUs: number;
@@ -153,12 +151,12 @@ class MasterDataAnalyticsService {
   }
 
   private async getTotalSKUs(): Promise<number> {
-    const { count, error } = await db
+    const { count, error } = await supabase
       .from('skus')
       .select('*', { count: 'exact', head: true });
     
     if (error) {
-      if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+      if (error.message.includes('relation "skus" does not exist')) {
         return 0;
       }
       throw error;
@@ -167,13 +165,13 @@ class MasterDataAnalyticsService {
   }
 
   private async getActiveSuppliers(): Promise<number> {
-    const { count, error } = await db
+    const { count, error } = await supabase
       .from('suppliers')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'active');
     
     if (error) {
-      if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+      if (error.message.includes('relation "suppliers" does not exist')) {
         return 0;
       }
       throw error;
@@ -182,12 +180,12 @@ class MasterDataAnalyticsService {
   }
 
   private async getTotalLocations(): Promise<number> {
-    const { count, error } = await db
+    const { count, error } = await supabase
       .from('storage_locations')
       .select('*', { count: 'exact', head: true });
     
     if (error) {
-      if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+      if (error.message.includes('relation "storage_locations" does not exist')) {
         return 0;
       }
       throw error;
@@ -196,12 +194,12 @@ class MasterDataAnalyticsService {
   }
 
   private async getCategoriesCount(): Promise<number> {
-    const { count, error } = await db
+    const { count, error } = await supabase
       .from('categories')
       .select('*', { count: 'exact', head: true });
     
     if (error) {
-      if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+      if (error.message.includes('relation "categories" does not exist')) {
         return 0;
       }
       throw error;
@@ -221,13 +219,13 @@ class MasterDataAnalyticsService {
     const twentyFourHoursAgo = new Date();
     twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
-    const { count, error } = await db
+    const { count, error } = await supabase
       .from('sku_movements')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', twentyFourHoursAgo.toISOString());
     
     if (error) {
-      if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+      if (error.message.includes('relation "sku_movements" does not exist')) {
         return 0;
       }
       throw error;
@@ -236,7 +234,7 @@ class MasterDataAnalyticsService {
   }
 
   private async getTopCategories(): Promise<Array<{ name: string; count: number; percentage: number }>> {
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from('skus')
       .select(`
         category_id,
@@ -244,7 +242,7 @@ class MasterDataAnalyticsService {
       `);
 
     if (error) {
-      if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+      if (error.message.includes('relation') && error.message.includes('does not exist')) {
         return [];
       }
       throw error;
@@ -255,9 +253,9 @@ class MasterDataAnalyticsService {
     const categoryCount: Record<string, number> = {};
     const total = data.length;
 
-    data.forEach((item: any) => {
+    data.forEach(item => {
       if (item.categories) {
-        const categoryName = item.categories.name || 'Sem Categoria';
+        const categoryName = (item.categories as any).name || 'Sem Categoria';
         categoryCount[categoryName] = (categoryCount[categoryName] || 0) + 1;
       }
     });
@@ -273,7 +271,7 @@ class MasterDataAnalyticsService {
   }
 
   private async getSupplierPerformance(): Promise<Array<{ name: string; activeSKUs: number; rating: number }>> {
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from('suppliers')
       .select(`
         company_name,
@@ -282,7 +280,7 @@ class MasterDataAnalyticsService {
       .eq('status', 'active');
 
     if (error) {
-      if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+      if (error.message.includes('relation') && error.message.includes('does not exist')) {
         return [];
       }
       throw error;
@@ -290,18 +288,18 @@ class MasterDataAnalyticsService {
 
     if (!data) return [];
 
-    return data.map((supplier: any) => ({
+    return data.map(supplier => ({
       name: supplier.company_name,
-      activeSKUs: supplier.skus?.length || 0,
-      rating: Math.round((Math.random() * 2 + 3) * 10) / 10
-    })).sort((a: any, b: any) => b.activeSKUs - a.activeSKUs).slice(0, 5);
+      activeSKUs: (supplier.skus as any[])?.length || 0,
+      rating: Math.round((Math.random() * 2 + 3) * 10) / 10 // Simulated rating between 3.0-5.0
+    })).sort((a, b) => b.activeSKUs - a.activeSKUs).slice(0, 5);
   }
 
   private async getLocationUtilization(): Promise<Array<{ code: string; utilization: number; capacity: number }>> {
     try {
       const [locationsResult, stockLevelsResult] = await Promise.all([
-        db.from('storage_locations').select('code, max_capacity'),
-        db.from('stock_levels').select(`
+        supabase.from('storage_locations').select('code, max_capacity'),
+        supabase.from('stock_levels').select(`
           location_id,
           current_quantity,
           storage_locations!location_id(code, max_capacity)
@@ -319,8 +317,8 @@ class MasterDataAnalyticsService {
 
       const utilizationMap: Record<string, { used: number; capacity: number }> = {};
 
-      stockLevels.forEach((level: any) => {
-        const location = level.storage_locations;
+      stockLevels.forEach(level => {
+        const location = level.storage_locations as any;
         if (location) {
           const code = location.code;
           if (!utilizationMap[code]) {
@@ -352,17 +350,17 @@ class MasterDataAnalyticsService {
       date.setDate(date.getDate() - i);
       
       try {
-        const { data, error } = await db
+        const { data, error } = await supabase
           .from('sku_movements')
           .select('quantity, movement_type')
           .gte('created_at', new Date(date.setHours(0, 0, 0, 0)).toISOString())
           .lt('created_at', new Date(date.setHours(23, 59, 59, 999)).toISOString());
 
-        if (error && !error.message?.includes('relation') && !error.message?.includes('does not exist')) {
+        if (error && !error.message.includes('relation') && !error.message.includes('does not exist')) {
           throw error;
         }
 
-        const totalValue = data?.reduce((sum: number, movement: any) => {
+        const totalValue = data?.reduce((sum, movement) => {
           return sum + (movement.movement_type === 'in' ? movement.quantity : -movement.quantity);
         }, 0) || 0;
 
@@ -386,12 +384,12 @@ class MasterDataAnalyticsService {
   }
 
   private async getABCDistribution(): Promise<{ A: number; B: number; C: number }> {
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from('skus')
       .select('abc_classification');
 
     if (error) {
-      if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+      if (error.message.includes('relation "skus" does not exist')) {
         return { A: 0, B: 0, C: 0 };
       }
       throw error;
@@ -400,7 +398,7 @@ class MasterDataAnalyticsService {
     if (!data) return { A: 0, B: 0, C: 0 };
 
     const distribution = { A: 0, B: 0, C: 0 };
-    data.forEach((sku: any) => {
+    data.forEach(sku => {
       if (sku.abc_classification && ['A', 'B', 'C'].includes(sku.abc_classification)) {
         distribution[sku.abc_classification as 'A' | 'B' | 'C']++;
       }

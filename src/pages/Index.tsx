@@ -28,16 +28,29 @@ import { ConnectorHub } from '@/components/integration/ConnectorHub';
 import { PWAInstaller } from '@/components/mobile/PWAInstaller';
 import { AccessibilityMenu } from '@/components/accessibility/AccessibilityMenu';
 import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
+import { AuthProvider } from '@/components/AuthProvider';
+import { AuthButton } from '@/components/AuthButton';
 import { ViewportProvider } from '@/components/ui/viewport-provider';
 import { useMobile } from '@/hooks/use-mobile';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 
 const IndexContent = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const { setSidebarCollapsed, setBreadcrumbs } = useNavigation();
   const isMobile = useMobile();
+
+  useEffect(() => {
+    getCurrentUser();
+  }, []);
+
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUser(user);
+  };
 
   useEffect(() => {
     // Update breadcrumbs when module changes
@@ -166,24 +179,27 @@ const IndexContent = () => {
   // Mobile Layout
   if (isMobile) {
     return (
-      <ViewportProvider>
-        <MobileLayout 
-          activeModule={activeModule}
-          onModuleChange={handleModuleChange}
-        >
-          {renderModule()}
-        </MobileLayout>
-        <PWAInstaller />
-        <AccessibilityMenu />
-        <Toaster />
-        <Sonner />
-      </ViewportProvider>
+      <AuthProvider>
+        <ViewportProvider>
+          <MobileLayout 
+            activeModule={activeModule}
+            onModuleChange={handleModuleChange}
+          >
+            {renderModule()}
+          </MobileLayout>
+          <PWAInstaller />
+          <AccessibilityMenu />
+          <Toaster />
+          <Sonner />
+        </ViewportProvider>
+      </AuthProvider>
     );
   }
 
   // Desktop Layout
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <AuthProvider>
+      <div className="min-h-screen bg-gray-50 flex">
         <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
         <div className="flex-1 flex flex-col min-w-0">
           <div className="border-b bg-white px-6 py-4">
@@ -192,6 +208,7 @@ const IndexContent = () => {
                 <GlobalSearchV2 />
               </div>
               <div className="flex items-center gap-2">
+                <AuthButton user={currentUser} onAuthChange={getCurrentUser} />
                 <AdvancedNotificationCenter />
               </div>
             </div>
@@ -200,11 +217,12 @@ const IndexContent = () => {
             {renderModule()}
           </main>
         </div>
-      <PWAInstaller />
-      <AccessibilityMenu />
-      <Toaster />
-      <Sonner />
-    </div>
+        <PWAInstaller />
+        <AccessibilityMenu />
+        <Toaster />
+        <Sonner />
+      </div>
+    </AuthProvider>
   );
 };
 
