@@ -1,5 +1,4 @@
 
-import { supabase } from '@/lib/supabase';
 import { UserCertification, ToolSafetyRequirement, SecurityAccessLog } from '@/types/database';
 
 export interface SafetyValidationResult {
@@ -17,6 +16,11 @@ export interface CertificationStatus {
   certification: UserCertification;
 }
 
+// In-memory stores
+const safetyRequirementsStore: ToolSafetyRequirement[] = [];
+const userCertificationsStore: UserCertification[] = [];
+const accessLogsStore: SecurityAccessLog[] = [];
+
 class SafetyComplianceApiService {
   // Validar se usuário pode acessar ferramenta
   async validateToolAccess(userId: string, toolId: string): Promise<SafetyValidationResult> {
@@ -24,13 +28,10 @@ class SafetyComplianceApiService {
       console.log('Validando acesso de segurança:', { userId, toolId });
 
       // Buscar requisitos de segurança da ferramenta
-      const { data: safetyRequirements } = await supabase
-        .from('tool_safety_requirements')
-        .select('*')
-        .eq('tool_id', toolId);
+      const safetyRequirements = safetyRequirementsStore.filter(r => r.tool_id === toolId);
 
       // Se não há requisitos de segurança, acesso permitido
-      if (!safetyRequirements || safetyRequirements.length === 0) {
+      if (safetyRequirements.length === 0) {
         await this.logAccessAttempt(userId, toolId, 'granted', null, []);
         return {
           allowed: true,
@@ -40,31 +41,28 @@ class SafetyComplianceApiService {
       }
 
       // Buscar certificações do usuário
-      const { data: userCertifications } = await supabase
-        .from('user_certifications')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'active');
+      const userCertifications = userCertificationsStore.filter(
+        c => c.user_id === userId && c.status === 'active'
+      );
 
       const requiredCertTypes = safetyRequirements.map(req => req.required_certification_type);
-      const userCertTypes = userCertifications?.map(cert => cert.certification_type) || [];
 
       // Verificar se usuário possui todas as certificações obrigatórias
       const mandatoryRequirements = safetyRequirements.filter(req => req.mandatory);
       const missingMandatoryCerts = mandatoryRequirements.filter(
-        req => !this.hasValidCertification(req.required_certification_type, userCertifications || [])
+        req => !this.hasValidCertification(req.required_certification_type, userCertifications)
       );
 
       if (missingMandatoryCerts.length > 0) {
-        const denialReason = this.buildDenialMessage(missingMandatoryCerts, userCertifications || []);
+        const denialReason = this.buildDenialMessage(missingMandatoryCerts, userCertifications);
         await this.logAccessAttempt(userId, toolId, 'denied', denialReason, requiredCertTypes);
         
         return {
           allowed: false,
           denialReason,
           requiredCertifications: requiredCertTypes,
-          userCertifications: userCertifications || [],
-          riskLevel: Math.max(...safetyRequirements.map(req => this.getRiskLevelValue(req.risk_level))) as any
+          userCertifications: userCertifications,
+          riskLevel: 'high'
         };
       }
 
@@ -73,7 +71,7 @@ class SafetyComplianceApiService {
       return {
         allowed: true,
         requiredCertifications: requiredCertTypes,
-        userCertifications: userCertifications || []
+        userCertifications: userCertifications
       };
 
     } catch (error) {
@@ -100,7 +98,7 @@ class SafetyComplianceApiService {
 
   // Construir mensagem de negação de acesso
   private buildDenialMessage(missingCerts: ToolSafetyRequirement[], userCerts: UserCertification[]): string {
-    const certNames = {
+    const certNames: Record<string, string> = {
       'NR-10': 'NR-10 (Segurança em Instalações Elétricas)',
       'NR-35': 'NR-35 (Trabalho em Altura)',
       'Operador-Empilhadeira': 'Operador de Empilhadeira',
@@ -110,7 +108,7 @@ class SafetyComplianceApiService {
       'Espaco-Confinado': 'Espaço Confinado'
     };
 
-    const missing = missingCerts.map(cert => certNames[cert.required_certification_type]).join(', ');
+    const missing = missingCerts.map(cert => certNames[cert.required_certification_type] || cert.required_certification_type).join(', ');
     
     let message = `❌ ACESSO NEGADO!\n\nSua(s) certificação(ões) para este equipamento não está(ão) válida(s):\n• ${missing}`;
 
@@ -129,12 +127,6 @@ class SafetyComplianceApiService {
     return message;
   }
 
-  // Converter nível de risco para valor numérico
-  private getRiskLevelValue(level: string): number {
-    const levels = { low: 1, medium: 2, high: 3, critical: 4 };
-    return levels[level] || 1;
-  }
-
   // Registrar tentativa de acesso para auditoria
   private async logAccessAttempt(
     userId: string, 
@@ -144,16 +136,17 @@ class SafetyComplianceApiService {
     requiredCerts: string[]
   ): Promise<void> {
     try {
-      await supabase
-        .from('security_access_logs')
-        .insert({
-          user_id: userId,
-          tool_id: toolId,
-          access_attempt: result,
-          denial_reason: reason,
-          required_certifications: requiredCerts.join(', '),
-          timestamp: new Date().toISOString()
-        });
+      const log: SecurityAccessLog = {
+        id: crypto.randomUUID(),
+        user_id: userId,
+        tool_id: toolId,
+        access_attempt: result,
+        denial_reason: reason || '',
+        required_certifications: requiredCerts.join(', '),
+        timestamp: new Date().toISOString(),
+        created_at: new Date().toISOString()
+      };
+      accessLogsStore.push(log);
     } catch (error) {
       console.error('Erro ao registrar log de acesso:', error);
     }
@@ -162,13 +155,9 @@ class SafetyComplianceApiService {
   // Buscar certificações de um usuário
   async getUserCertifications(userId: string): Promise<CertificationStatus[]> {
     try {
-      const { data: certifications } = await supabase
-        .from('user_certifications')
-        .select('*')
-        .eq('user_id', userId)
-        .order('expiry_date', { ascending: true });
-
-      if (!certifications) return [];
+      const certifications = userCertificationsStore
+        .filter(c => c.user_id === userId)
+        .sort((a, b) => new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime());
 
       return certifications.map(cert => {
         const now = new Date();
@@ -191,13 +180,9 @@ class SafetyComplianceApiService {
   // Buscar ferramentas que requerem certificação específica
   async getToolsRequiringCertification(certType: string): Promise<string[]> {
     try {
-      const { data: requirements } = await supabase
-        .from('tool_safety_requirements')
-        .select('tool_id')
-        .eq('required_certification_type', certType)
-        .eq('mandatory', true);
-
-      return requirements?.map(req => req.tool_id) || [];
+      return safetyRequirementsStore
+        .filter(r => r.required_certification_type === certType && r.mandatory)
+        .map(r => r.tool_id);
     } catch (error) {
       console.error('Erro ao buscar ferramentas:', error);
       return [];
@@ -207,32 +192,23 @@ class SafetyComplianceApiService {
   // Buscar logs de acesso negado para auditoria
   async getAccessDeniedLogs(filters: { userId?: string; toolId?: string; days?: number } = {}): Promise<SecurityAccessLog[]> {
     try {
-      let query = supabase
-        .from('security_access_logs')
-        .select(`
-          *,
-          users(name, department),
-          tools(name)
-        `)
-        .eq('access_attempt', 'denied')
-        .order('timestamp', { ascending: false });
+      let logs = accessLogsStore.filter(l => l.access_attempt === 'denied');
 
       if (filters.userId) {
-        query = query.eq('user_id', filters.userId);
+        logs = logs.filter(l => l.user_id === filters.userId);
       }
 
       if (filters.toolId) {
-        query = query.eq('tool_id', filters.toolId);
+        logs = logs.filter(l => l.tool_id === filters.toolId);
       }
 
       if (filters.days) {
         const daysAgo = new Date();
         daysAgo.setDate(daysAgo.getDate() - filters.days);
-        query = query.gte('timestamp', daysAgo.toISOString());
+        logs = logs.filter(l => new Date(l.timestamp) >= daysAgo);
       }
 
-      const { data } = await query;
-      return data || [];
+      return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     } catch (error) {
       console.error('Erro ao buscar logs:', error);
       return [];

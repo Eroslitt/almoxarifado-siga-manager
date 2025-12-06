@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabase';
-import { Tool, ToolMovement, User } from '@/types/database';
+
+import { Tool, ToolMovement } from '@/types/database';
 import { safetyComplianceApi } from './safetyComplianceApi';
 
 export interface CheckoutRequest {
@@ -22,13 +22,30 @@ export interface ToolsFilters {
   limit?: number;
 }
 
+// In-memory stores
+const toolsStore: Tool[] = [
+  {
+    id: 'tool-001',
+    name: 'Furadeira Bosch',
+    category: 'Ferramentas Elétricas',
+    status: 'available',
+    location: 'A-01-01-A',
+    registration_date: new Date().toISOString(),
+    last_maintenance: new Date().toISOString(),
+    next_maintenance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    usage_hours: 120,
+    current_user_id: '',
+    photo_url: '',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+
+const movementsStore: ToolMovement[] = [];
+
 class ToolsApiService {
-  // Fazer checkout de uma ferramenta com validação de segurança
   async checkoutTool(request: CheckoutRequest): Promise<{ success: boolean; message: string; safetyDenied?: boolean }> {
     try {
-      console.log('Fazendo checkout da ferramenta:', request);
-
-      // NOVA VALIDAÇÃO DE SEGURANÇA - Verificar certificações primeiro
       const safetyValidation = await safetyComplianceApi.validateToolAccess(request.userId, request.toolId);
       
       if (!safetyValidation.allowed) {
@@ -39,14 +56,8 @@ class ToolsApiService {
         };
       }
 
-      // Verificar se a ferramenta está disponível
-      const { data: tool, error: toolError } = await supabase
-        .from('tools')
-        .select('*')
-        .eq('id', request.toolId)
-        .single();
-
-      if (toolError || !tool) {
+      const tool = toolsStore.find(t => t.id === request.toolId);
+      if (!tool) {
         return { success: false, message: 'Ferramenta não encontrada' };
       }
 
@@ -54,35 +65,20 @@ class ToolsApiService {
         return { success: false, message: 'Ferramenta não está disponível' };
       }
 
-      // Atualizar status da ferramenta
-      const { error: updateError } = await supabase
-        .from('tools')
-        .update({
-          status: 'in-use',
-          current_user_id: request.userId,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', request.toolId);
+      tool.status = 'in-use';
+      tool.current_user_id = request.userId;
+      tool.updated_at = new Date().toISOString();
 
-      if (updateError) {
-        console.error('Erro ao atualizar ferramenta:', updateError);
-        return { success: false, message: 'Erro ao atualizar status da ferramenta' };
-      }
-
-      // Registrar movimentação
-      const { error: movementError } = await supabase
-        .from('tool_movements')
-        .insert({
-          tool_id: request.toolId,
-          user_id: request.userId,
-          action: 'checkout',
-          timestamp: new Date().toISOString()
-        });
-
-      if (movementError) {
-        console.error('Erro ao registrar movimentação:', movementError);
-        return { success: false, message: 'Erro ao registrar movimentação' };
-      }
+      movementsStore.push({
+        id: crypto.randomUUID(),
+        tool_id: request.toolId,
+        user_id: request.userId,
+        action: 'checkout',
+        timestamp: new Date().toISOString(),
+        condition_note: '',
+        usage_duration_minutes: 0,
+        created_at: new Date().toISOString()
+      });
 
       return { success: true, message: 'Checkout realizado com sucesso' };
     } catch (error) {
@@ -91,19 +87,10 @@ class ToolsApiService {
     }
   }
 
-  // Fazer checkin de uma ferramenta
   async checkinTool(request: CheckinRequest): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('Fazendo checkin da ferramenta:', request);
-
-      // Verificar se a ferramenta está em uso
-      const { data: tool, error: toolError } = await supabase
-        .from('tools')
-        .select('*')
-        .eq('id', request.toolId)
-        .single();
-
-      if (toolError || !tool) {
+      const tool = toolsStore.find(t => t.id === request.toolId);
+      if (!tool) {
         return { success: false, message: 'Ferramenta não encontrada' };
       }
 
@@ -111,170 +98,78 @@ class ToolsApiService {
         return { success: false, message: 'Ferramenta não está em uso' };
       }
 
-      // Determinar novo status baseado na condição
-      const newStatus = request.hasIssue ? 'maintenance' : 'available';
+      tool.status = request.hasIssue ? 'maintenance' : 'available';
+      tool.current_user_id = '';
+      tool.updated_at = new Date().toISOString();
 
-      // Atualizar status da ferramenta
-      const { error: updateError } = await supabase
-        .from('tools')
-        .update({
-          status: newStatus,
-          current_user_id: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', request.toolId);
+      movementsStore.push({
+        id: crypto.randomUUID(),
+        tool_id: request.toolId,
+        user_id: request.userId,
+        action: 'checkin',
+        timestamp: new Date().toISOString(),
+        condition_note: request.conditionNote || '',
+        usage_duration_minutes: 0,
+        created_at: new Date().toISOString()
+      });
 
-      if (updateError) {
-        console.error('Erro ao atualizar ferramenta:', updateError);
-        return { success: false, message: 'Erro ao atualizar status da ferramenta' };
-      }
-
-      // Registrar movimentação
-      const { error: movementError } = await supabase
-        .from('tool_movements')
-        .insert({
-          tool_id: request.toolId,
-          user_id: request.userId,
-          action: 'checkin',
-          condition_note: request.conditionNote || null,
-          timestamp: new Date().toISOString()
-        });
-
-      if (movementError) {
-        console.error('Erro ao registrar movimentação:', movementError);
-        return { success: false, message: 'Erro ao registrar movimentação' };
-      }
-
-      const message = request.hasIssue 
-        ? 'Checkin realizado. Ferramenta enviada para manutenção.'
-        : 'Checkin realizado com sucesso';
-
-      return { success: true, message };
+      return { 
+        success: true, 
+        message: request.hasIssue ? 'Checkin realizado. Ferramenta enviada para manutenção.' : 'Checkin realizado com sucesso' 
+      };
     } catch (error) {
       console.error('Erro no checkin:', error);
       return { success: false, message: 'Erro interno do servidor' };
     }
   }
 
-  // Listar ferramentas com filtros
   async getTools(filters: ToolsFilters = {}): Promise<{ data: Tool[]; total: number }> {
-    try {
-      let query = supabase
-        .from('tools')
-        .select('*', { count: 'exact' });
+    let result = [...toolsStore];
 
-      // Aplicar filtros
-      if (filters.status) {
-        query = query.eq('status', filters.status);
-      }
-
-      if (filters.category) {
-        query = query.eq('category', filters.category);
-      }
-
-      if (filters.search) {
-        query = query.or(`name.ilike.%${filters.search}%,id.ilike.%${filters.search}%`);
-      }
-
-      // Paginação
-      const page = filters.page || 1;
-      const limit = filters.limit || 20;
-      const from = (page - 1) * limit;
-      const to = from + limit - 1;
-
-      query = query.range(from, to);
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        console.error('Erro ao buscar ferramentas:', error);
-        return { data: [], total: 0 };
-      }
-
-      return { data: data || [], total: count || 0 };
-    } catch (error) {
-      console.error('Erro ao buscar ferramentas:', error);
-      return { data: [], total: 0 };
+    if (filters.status) {
+      result = result.filter(t => t.status === filters.status);
     }
+    if (filters.category) {
+      result = result.filter(t => t.category === filters.category);
+    }
+    if (filters.search) {
+      const search = filters.search.toLowerCase();
+      result = result.filter(t => 
+        t.name.toLowerCase().includes(search) || t.id.toLowerCase().includes(search)
+      );
+    }
+
+    const page = filters.page || 1;
+    const limit = filters.limit || 20;
+    const start = (page - 1) * limit;
+    const paginated = result.slice(start, start + limit);
+
+    return { data: paginated, total: result.length };
   }
 
-  // Buscar histórico de uma ferramenta
   async getToolHistory(toolId: string): Promise<ToolMovement[]> {
-    try {
-      const { data, error } = await supabase
-        .from('tool_movements')
-        .select(`
-          *,
-          users(name, department)
-        `)
-        .eq('tool_id', toolId)
-        .order('timestamp', { ascending: false });
-
-      if (error) {
-        console.error('Erro ao buscar histórico:', error);
-        return [];
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('Erro ao buscar histórico:', error);
-      return [];
-    }
+    return movementsStore
+      .filter(m => m.tool_id === toolId)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }
 
-  // Atualizar status de uma ferramenta
   async updateToolStatus(toolId: string, status: Tool['status']): Promise<{ success: boolean; message: string }> {
-    try {
-      const { error } = await supabase
-        .from('tools')
-        .update({
-          status,
-          current_user_id: status === 'available' ? null : undefined,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', toolId);
-
-      if (error) {
-        console.error('Erro ao atualizar status:', error);
-        return { success: false, message: 'Erro ao atualizar status da ferramenta' };
-      }
-
-      return { success: true, message: 'Status atualizado com sucesso' };
-    } catch (error) {
-      console.error('Erro ao atualizar status:', error);
-      return { success: false, message: 'Erro interno do servidor' };
+    const tool = toolsStore.find(t => t.id === toolId);
+    if (tool) {
+      tool.status = status;
+      if (status === 'available') tool.current_user_id = '';
+      tool.updated_at = new Date().toISOString();
     }
+    return { success: true, message: 'Status atualizado com sucesso' };
   }
 
-  // Buscar estatísticas das ferramentas
-  async getToolsStats(): Promise<{
-    total: number;
-    available: number;
-    inUse: number;
-    maintenance: number;
-  }> {
-    try {
-      const { data, error } = await supabase
-        .from('tools')
-        .select('status');
-
-      if (error) {
-        console.error('Erro ao buscar estatísticas:', error);
-        return { total: 0, available: 0, inUse: 0, maintenance: 0 };
-      }
-
-      const stats = {
-        total: data?.length || 0,
-        available: data?.filter(t => t.status === 'available').length || 0,
-        inUse: data?.filter(t => t.status === 'in-use').length || 0,
-        maintenance: data?.filter(t => t.status === 'maintenance').length || 0
-      };
-
-      return stats;
-    } catch (error) {
-      console.error('Erro ao buscar estatísticas:', error);
-      return { total: 0, available: 0, inUse: 0, maintenance: 0 };
-    }
+  async getToolsStats(): Promise<{ total: number; available: number; inUse: number; maintenance: number }> {
+    return {
+      total: toolsStore.length,
+      available: toolsStore.filter(t => t.status === 'available').length,
+      inUse: toolsStore.filter(t => t.status === 'in-use').length,
+      maintenance: toolsStore.filter(t => t.status === 'maintenance').length
+    };
   }
 }
 

@@ -103,6 +103,7 @@ export interface StockLevel {
   reserved_quantity: number;
   available_quantity: number;
   last_movement_date: string;
-  last_count_date: string | null;
+  last_count_date?: string | null;
+  created_at?: string;
   updated_at: string;
 }

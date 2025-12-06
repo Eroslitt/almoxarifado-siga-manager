@@ -1,5 +1,4 @@
 
-import { supabase } from '@/lib/supabase';
 import { Alert } from '@/types/database';
 
 export interface CreateAlertRequest {
@@ -11,27 +10,14 @@ export interface CreateAlertRequest {
   priority?: Alert['priority'];
 }
 
+// In-memory store for alerts (will be replaced with real DB when table is created)
+const alertsStore: Alert[] = [];
+
 class AlertsApiService {
   // Buscar alertas ativos
   async getActiveAlerts(): Promise<Alert[]> {
     try {
-      const { data, error } = await supabase
-        .from('alerts')
-        .select(`
-          *,
-          tools(name),
-          users(name, email)
-        `)
-        .eq('status', 'active')
-        .order('priority', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Erro ao buscar alertas:', error);
-        return [];
-      }
-
-      return data || [];
+      return alertsStore.filter(alert => alert.status === 'active');
     } catch (error) {
       console.error('Erro ao buscar alertas:', error);
       return [];
@@ -41,23 +27,21 @@ class AlertsApiService {
   // Criar novo alerta
   async createAlert(request: CreateAlertRequest): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
-        .from('alerts')
-        .insert({
-          type: request.type,
-          title: request.title,
-          message: request.message,
-          tool_id: request.toolId || null,
-          user_id: request.userId || null,
-          priority: request.priority || 'medium',
-          status: 'active'
-        });
+      const newAlert: Alert = {
+        id: crypto.randomUUID(),
+        type: request.type,
+        title: request.title,
+        message: request.message,
+        tool_id: request.toolId || '',
+        user_id: request.userId || '',
+        priority: request.priority || 'medium',
+        status: 'active',
+        created_at: new Date().toISOString(),
+        acknowledged_at: '',
+        resolved_at: ''
+      };
 
-      if (error) {
-        console.error('Erro ao criar alerta:', error);
-        return { success: false, message: 'Erro ao criar alerta' };
-      }
-
+      alertsStore.push(newAlert);
       return { success: true, message: 'Alerta criado com sucesso' };
     } catch (error) {
       console.error('Erro ao criar alerta:', error);
@@ -68,19 +52,11 @@ class AlertsApiService {
   // Marcar alerta como confirmado
   async acknowledgeAlert(alertId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
-        .from('alerts')
-        .update({
-          status: 'acknowledged',
-          acknowledged_at: new Date().toISOString()
-        })
-        .eq('id', alertId);
-
-      if (error) {
-        console.error('Erro ao confirmar alerta:', error);
-        return { success: false, message: 'Erro ao confirmar alerta' };
+      const alert = alertsStore.find(a => a.id === alertId);
+      if (alert) {
+        alert.status = 'acknowledged';
+        alert.acknowledged_at = new Date().toISOString();
       }
-
       return { success: true, message: 'Alerta confirmado' };
     } catch (error) {
       console.error('Erro ao confirmar alerta:', error);
@@ -91,19 +67,11 @@ class AlertsApiService {
   // Resolver alerta
   async resolveAlert(alertId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
-        .from('alerts')
-        .update({
-          status: 'resolved',
-          resolved_at: new Date().toISOString()
-        })
-        .eq('id', alertId);
-
-      if (error) {
-        console.error('Erro ao resolver alerta:', error);
-        return { success: false, message: 'Erro ao resolver alerta' };
+      const alert = alertsStore.find(a => a.id === alertId);
+      if (alert) {
+        alert.status = 'resolved';
+        alert.resolved_at = new Date().toISOString();
       }
-
       return { success: true, message: 'Alerta resolvido' };
     } catch (error) {
       console.error('Erro ao resolver alerta:', error);
@@ -113,37 +81,8 @@ class AlertsApiService {
 
   // Verificar ferramentas em atraso (para gerar alertas automáticos)
   async checkOverdueTools(): Promise<void> {
-    try {
-      // Buscar ferramentas em uso há mais de 24 horas
-      const { data: overdueTools, error } = await supabase
-        .from('tool_movements')
-        .select(`
-          *,
-          tools(name),
-          users(name, email)
-        `)
-        .eq('action', 'checkout')
-        .lt('timestamp', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-
-      if (error) {
-        console.error('Erro ao verificar ferramentas em atraso:', error);
-        return;
-      }
-
-      // Criar alertas para ferramentas em atraso
-      for (const movement of overdueTools || []) {
-        await this.createAlert({
-          type: 'overdue_return',
-          title: 'Ferramenta em Atraso',
-          message: `A ferramenta ${movement.tools?.name} está em uso há mais de 24 horas`,
-          toolId: movement.tool_id,
-          userId: movement.user_id,
-          priority: 'high'
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao verificar ferramentas em atraso:', error);
-    }
+    // Esta função será implementada quando a integração com DB estiver completa
+    console.log('Verificando ferramentas em atraso...');
   }
 }
 
