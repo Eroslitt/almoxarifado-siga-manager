@@ -28,8 +28,6 @@ import { ConnectorHub } from '@/components/integration/ConnectorHub';
 import { PWAInstaller } from '@/components/mobile/PWAInstaller';
 import { AccessibilityMenu } from '@/components/accessibility/AccessibilityMenu';
 import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
-import { useAuth } from '@/components/AuthProvider';
-import { AuthButton } from '@/components/AuthButton';
 import { ViewportProvider } from '@/components/ui/viewport-provider';
 import { useMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,14 +36,8 @@ import { Toaster as Sonner } from '@/components/ui/sonner';
 
 const IndexContent = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const { setSidebarCollapsed, setBreadcrumbs } = useNavigation();
   const isMobile = useMobile();
-  const { user, session } = useAuth();
-
-  useEffect(() => {
-    setCurrentUser(user);
-  }, [user]);
 
   useEffect(() => {
     // Update breadcrumbs when module changes
@@ -200,7 +192,6 @@ const IndexContent = () => {
                 <GlobalSearchV2 />
               </div>
               <div className="flex items-center gap-2">
-                <AuthButton user={currentUser} onAuthChange={() => setCurrentUser(user)} />
                 <AdvancedNotificationCenter />
               </div>
             </div>
