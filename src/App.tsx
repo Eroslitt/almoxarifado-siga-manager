@@ -6,6 +6,7 @@ const Index = lazy(() => import("./pages/Index"));
 const Subscription = lazy(() => import("./pages/Subscription"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
+// Create query client outside component
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -15,11 +16,18 @@ const queryClient = new QueryClient({
   },
 });
 
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="text-foreground">Carregando...</div>
+  </div>
+);
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Carregando...</div>}> 
+        <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/*" element={<Index />} />
             <Route path="/subscription" element={<Subscription />} />
