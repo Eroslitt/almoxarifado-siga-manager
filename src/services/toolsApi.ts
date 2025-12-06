@@ -34,8 +34,10 @@ const toolsStore: Tool[] = [
     last_maintenance: new Date().toISOString(),
     next_maintenance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     usage_hours: 120,
-    current_user_id: '',
-    photo_url: '',
+    current_user_id: null,
+    qr_code: 'QR-TOOL-001',
+    maintenance_interval_hours: 500,
+    purchase_price: 599.99,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }
@@ -75,8 +77,8 @@ class ToolsApiService {
         user_id: request.userId,
         action: 'checkout',
         timestamp: new Date().toISOString(),
-        condition_note: '',
-        usage_duration_minutes: 0,
+        condition_note: null,
+        usage_duration_minutes: null,
         created_at: new Date().toISOString()
       });
 
@@ -99,7 +101,7 @@ class ToolsApiService {
       }
 
       tool.status = request.hasIssue ? 'maintenance' : 'available';
-      tool.current_user_id = '';
+      tool.current_user_id = null;
       tool.updated_at = new Date().toISOString();
 
       movementsStore.push({
@@ -108,8 +110,8 @@ class ToolsApiService {
         user_id: request.userId,
         action: 'checkin',
         timestamp: new Date().toISOString(),
-        condition_note: request.conditionNote || '',
-        usage_duration_minutes: 0,
+        condition_note: request.conditionNote || null,
+        usage_duration_minutes: null,
         created_at: new Date().toISOString()
       });
 
@@ -157,7 +159,7 @@ class ToolsApiService {
     const tool = toolsStore.find(t => t.id === toolId);
     if (tool) {
       tool.status = status;
-      if (status === 'available') tool.current_user_id = '';
+      if (status === 'available') tool.current_user_id = null;
       tool.updated_at = new Date().toISOString();
     }
     return { success: true, message: 'Status atualizado com sucesso' };
