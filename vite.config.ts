@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  cacheDir: "node_modules/.vite_" + Date.now(),
+  cacheDir: "node_modules/.vite_v3",
   server: {
     host: "::",
     port: 8080,
@@ -24,5 +24,8 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     include: ["react", "react-dom", "@tanstack/react-query"],
     force: true,
+    esbuildOptions: {
+      target: "esnext",
+    },
   },
 }));
