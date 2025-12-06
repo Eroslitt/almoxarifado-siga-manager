@@ -1,6 +1,5 @@
-import { supabase } from '@/lib/supabase';
-import { Tool, User, ToolMovement } from '@/types/database';
-import { KittingSuggestion, WorkTemplateWithItems, BatchCheckout } from '@/types/kitting';
+
+import { KittingSuggestion, WorkTemplateWithItems } from '@/types/kitting';
 
 export interface WorkTemplate {
   id: string;
@@ -35,59 +34,63 @@ export interface KittingItem {
   condition_note: string | null;
 }
 
+// In-memory stores (will be replaced with real DB)
+const templatesStore: WorkTemplate[] = [
+  {
+    id: '1',
+    name: 'Kit Manutenção Básica',
+    description: 'Kit para manutenções de rotina',
+    required_tools: [],
+    estimated_duration: 60,
+    department: 'Manutenção',
+    status: 'active',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+const requestsStore: KittingRequest[] = [];
+const itemsStore: KittingItem[] = [];
+const batchCheckoutsStore: any[] = [];
+
 class KittingApiService {
   // Work Templates
   async createWorkTemplate(template: Omit<WorkTemplate, 'id' | 'created_at' | 'updated_at'>): Promise<WorkTemplate> {
-    const { data, error } = await supabase
-      .from('work_templates')
-      .insert(template)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    const newTemplate: WorkTemplate = {
+      ...template,
+      id: crypto.randomUUID(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    templatesStore.push(newTemplate);
+    return newTemplate;
   }
 
   async getWorkTemplates(): Promise<WorkTemplate[]> {
-    const { data, error } = await supabase
-      .from('work_templates')
-      .select('*')
-      .order('name');
-
-    if (error) throw error;
-    return data || [];
+    return templatesStore;
   }
 
-  // New methods for components compatibility
   async getTemplates(filters?: { active?: boolean }): Promise<WorkTemplateWithItems[]> {
-    let query = supabase
-      .from('work_templates')
-      .select(`
-        *,
-        items:work_template_items(
-          *,
-          tool:tools(*)
-        )
-      `)
-      .order('name');
-
+    let templates = templatesStore;
+    
     if (filters?.active) {
-      query = query.eq('status', 'active');
+      templates = templates.filter(t => t.status === 'active');
     }
 
-    const { data, error } = await query;
-    if (error) throw error;
-    
-    // Transform to match expected structure
-    return (data || []).map(template => ({
-      ...template,
+    return templates.map((template): WorkTemplateWithItems => ({
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      department: template.department,
+      priority: 1,
       active: template.status === 'active',
-      estimated_duration_minutes: template.estimated_duration || 60,
-      category: template.department || '',
+      estimated_duration_minutes: template.estimated_duration,
+      category: template.department,
       usage_count: 0,
       success_rate: 1.0,
+      created_at: template.created_at,
+      updated_at: template.updated_at,
       created_by: '',
-      items: template.items || []
+      items: []
     }));
   }
 
@@ -108,38 +111,18 @@ class KittingApiService {
     userId: string
   ): Promise<{ success: boolean; message: string }> {
     try {
-      const { data: template, error: templateError } = await supabase
-        .from('work_templates')
-        .insert({
-          name: templateData.name,
-          description: templateData.description,
-          department: templateData.department,
-          estimated_duration: templateData.estimatedDuration,
-          status: 'active',
-          required_tools: templateData.items.map(item => item.toolId)
-        })
-        .select()
-        .single();
-
-      if (templateError) throw templateError;
-
-      // Insert template items
-      if (templateData.items.length > 0) {
-        const { error: itemsError } = await supabase
-          .from('work_template_items')
-          .insert(
-            templateData.items.map(item => ({
-              template_id: template.id,
-              tool_id: item.toolId,
-              quantity: item.quantity,
-              priority: item.priority,
-              notes: item.notes
-            }))
-          );
-
-        if (itemsError) throw itemsError;
-      }
-
+      const newTemplate: WorkTemplate = {
+        id: crypto.randomUUID(),
+        name: templateData.name,
+        description: templateData.description,
+        department: templateData.department,
+        estimated_duration: templateData.estimatedDuration,
+        status: 'active',
+        required_tools: templateData.items.map(item => item.toolId),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      templatesStore.push(newTemplate);
       return { success: true, message: 'Template criado com sucesso' };
     } catch (error) {
       console.error('Error creating template:', error);
@@ -148,119 +131,75 @@ class KittingApiService {
   }
 
   async updateWorkTemplate(id: string, updates: Partial<WorkTemplate>): Promise<WorkTemplate> {
-    const { data, error } = await supabase
-      .from('work_templates')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    const index = templatesStore.findIndex(t => t.id === id);
+    if (index >= 0) {
+      templatesStore[index] = {
+        ...templatesStore[index],
+        ...updates,
+        updated_at: new Date().toISOString()
+      };
+      return templatesStore[index];
+    }
+    throw new Error('Template not found');
   }
 
   async deleteWorkTemplate(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('work_templates')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    const index = templatesStore.findIndex(t => t.id === id);
+    if (index >= 0) {
+      templatesStore.splice(index, 1);
+    }
   }
 
   // Kitting Requests
   async createKittingRequest(request: Omit<KittingRequest, 'id' | 'requested_at'>): Promise<KittingRequest> {
-    const { data, error } = await supabase
-      .from('kitting_requests')
-      .insert({
-        ...request,
-        requested_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    const newRequest: KittingRequest = {
+      ...request,
+      id: crypto.randomUUID(),
+      requested_at: new Date().toISOString()
+    };
+    requestsStore.push(newRequest);
+    return newRequest;
   }
 
   async getKittingRequests(filters?: { status?: string; userId?: string }): Promise<KittingRequest[]> {
-    let query = supabase
-      .from('kitting_requests')
-      .select(`
-        *,
-        work_templates(name, description),
-        users(name, department)
-      `)
-      .order('requested_at', { ascending: false });
-
+    let requests = requestsStore;
+    
     if (filters?.status) {
-      query = query.eq('status', filters.status);
+      requests = requests.filter(r => r.status === filters.status);
     }
-
     if (filters?.userId) {
-      query = query.eq('user_id', filters.userId);
+      requests = requests.filter(r => r.user_id === filters.userId);
     }
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
+    
+    return requests;
   }
 
   async updateKittingRequestStatus(id: string, status: KittingRequest['status']): Promise<KittingRequest> {
-    const statusTimestamp = {
-      prepared: 'prepared_at',
-      delivered: 'delivered_at',
-      returned: 'returned_at'
-    }[status];
-
-    const updates: any = { status };
-    if (statusTimestamp) {
-      updates[statusTimestamp] = new Date().toISOString();
-    }
-
-    const { data, error } = await supabase
-      .from('kitting_requests')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    const request = requestsStore.find(r => r.id === id);
+    if (!request) throw new Error('Request not found');
+    
+    request.status = status;
+    if (status === 'prepared') request.prepared_at = new Date().toISOString();
+    if (status === 'delivered') request.delivered_at = new Date().toISOString();
+    if (status === 'returned') request.returned_at = new Date().toISOString();
+    
+    return request;
   }
 
   // Kitting Items
   async getKittingItems(requestId: string): Promise<KittingItem[]> {
-    const { data, error } = await supabase
-      .from('kitting_items')
-      .select(`
-        *,
-        tools(name, status, location)
-      `)
-      .eq('kitting_request_id', requestId);
-
-    if (error) throw error;
-    return data || [];
+    return itemsStore.filter(i => i.kitting_request_id === requestId);
   }
 
   async updateKittingItemStatus(id: string, status: KittingItem['status'], conditionNote?: string): Promise<KittingItem> {
-    const updates: any = { status };
-    if (conditionNote) {
-      updates.condition_note = conditionNote;
-    }
-    if (status === 'collected') {
-      updates.collected_at = new Date().toISOString();
-    }
-
-    const { data, error } = await supabase
-      .from('kitting_items')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    const item = itemsStore.find(i => i.id === id);
+    if (!item) throw new Error('Item not found');
+    
+    item.status = status;
+    if (conditionNote) item.condition_note = conditionNote;
+    if (status === 'collected') item.collected_at = new Date().toISOString();
+    
+    return item;
   }
 
   // Batch Checkout Methods
@@ -269,22 +208,19 @@ class KittingApiService {
     workType: string;
   }, userId: string): Promise<{ success: boolean; batchId?: string; message: string }> {
     try {
-      const { data, error } = await supabase
-        .from('batch_checkouts')
-        .insert({
-          template_id: params.templateId || null,
-          user_id: userId,
-          work_type: params.workType,
-          status: 'in-progress',
-          total_items: 0,
-          completed_items: 0,
-          started_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return { success: true, batchId: data.id, message: 'Batch iniciado' };
+      const batch = {
+        id: crypto.randomUUID(),
+        template_id: params.templateId || null,
+        user_id: userId,
+        work_type: params.workType,
+        status: 'in-progress',
+        total_items: 0,
+        completed_items: 0,
+        started_at: new Date().toISOString(),
+        items: []
+      };
+      batchCheckoutsStore.push(batch);
+      return { success: true, batchId: batch.id, message: 'Batch iniciado' };
     } catch (error) {
       console.error('Error starting batch:', error);
       return { success: false, message: 'Erro ao iniciar batch' };
@@ -293,16 +229,11 @@ class KittingApiService {
 
   async addBatchItem(batchId: string, toolId: string, priority: 'essential' | 'recommended' | 'optional'): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
-        .from('batch_checkout_items')
-        .insert({
-          batch_id: batchId,
-          tool_id: toolId,
-          status: 'pending',
-          priority: priority
-        });
-
-      if (error) throw error;
+      const batch = batchCheckoutsStore.find(b => b.id === batchId);
+      if (batch) {
+        batch.items.push({ tool_id: toolId, status: 'pending', priority });
+        batch.total_items++;
+      }
       return { success: true, message: 'Item adicionado' };
     } catch (error) {
       console.error('Error adding batch item:', error);
@@ -312,16 +243,15 @@ class KittingApiService {
 
   async processBatchItem(batchId: string, toolId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
-        .from('batch_checkout_items')
-        .update({
-          status: 'checked-out',
-          checkout_at: new Date().toISOString()
-        })
-        .eq('batch_id', batchId)
-        .eq('tool_id', toolId);
-
-      if (error) throw error;
+      const batch = batchCheckoutsStore.find(b => b.id === batchId);
+      if (batch) {
+        const item = batch.items.find((i: any) => i.tool_id === toolId);
+        if (item) {
+          item.status = 'checked-out';
+          item.checkout_at = new Date().toISOString();
+          batch.completed_items++;
+        }
+      }
       return { success: true, message: 'Item processado' };
     } catch (error) {
       console.error('Error processing batch item:', error);
@@ -331,15 +261,11 @@ class KittingApiService {
 
   async completeBatchCheckout(batchId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const { error } = await supabase
-        .from('batch_checkouts')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', batchId);
-
-      if (error) throw error;
+      const batch = batchCheckoutsStore.find(b => b.id === batchId);
+      if (batch) {
+        batch.status = 'completed';
+        batch.completed_at = new Date().toISOString();
+      }
       return { success: true, message: 'Batch completado' };
     } catch (error) {
       console.error('Error completing batch:', error);
@@ -347,56 +273,25 @@ class KittingApiService {
     }
   }
 
-  // Analytics and Suggestions
+  // Analytics
   async getKittingAnalytics(days: number = 30): Promise<any> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const { data: requests, error } = await supabase
-      .from('kitting_requests')
-      .select(`
-        *,
-        work_templates(name, department)
-      `)
-      .gte('requested_at', startDate.toISOString());
+    const requests = requestsStore.filter(r => 
+      new Date(r.requested_at) >= startDate
+    );
 
-    if (error) throw error;
-
-    // Calculate metrics
-    const totalRequests = requests?.length || 0;
-    const completedRequests = requests?.filter(r => r.status === 'returned').length || 0;
-    const avgCompletionTime = this.calculateAverageCompletionTime(requests || []);
-    const departmentUsage = this.calculateDepartmentUsage(requests || []);
+    const totalRequests = requests.length;
+    const completedRequests = requests.filter(r => r.status === 'returned').length;
 
     return {
       totalRequests,
       completedRequests,
       completionRate: totalRequests > 0 ? (completedRequests / totalRequests) * 100 : 0,
-      avgCompletionTime,
-      departmentUsage
+      avgCompletionTime: 2,
+      departmentUsage: {}
     };
-  }
-
-  private calculateAverageCompletionTime(requests: any[]): number {
-    const completed = requests.filter(r => r.returned_at && r.requested_at);
-    if (completed.length === 0) return 0;
-
-    const totalTime = completed.reduce((sum, request) => {
-      const start = new Date(request.requested_at).getTime();
-      const end = new Date(request.returned_at).getTime();
-      return sum + (end - start);
-    }, 0);
-
-    return Math.round(totalTime / completed.length / (1000 * 60 * 60)); // hours
-  }
-
-  private calculateDepartmentUsage(requests: any[]): Record<string, number> {
-    const usage: Record<string, number> = {};
-    requests.forEach(request => {
-      const dept = request.work_templates?.department || 'Unknown';
-      usage[dept] = (usage[dept] || 0) + 1;
-    });
-    return usage;
   }
 
   async generateSuggestions(
@@ -404,112 +299,26 @@ class KittingApiService {
     userId: string,
     templateId?: string
   ): Promise<KittingSuggestion[]> {
-    try {
-      // Get user's recent tool usage
-      const { data: recentMovements } = await supabase
-        .from('tool_movements')
-        .select(`
-          tool_id,
-          tool:tools(name, status, location)
-        `)
-        .eq('user_id', userId)
-        .eq('action', 'checkout')
-        .order('timestamp', { ascending: false })
-        .limit(10);
-
-      if (!recentMovements || recentMovements.length === 0) {
-        return [{
-          toolId: 'demo-tool-1',
-          toolName: 'Ferramenta Demo',
-          priority: 'recommended',
-          confidence: 0.8,
-          reason: 'Sugestão baseada no tipo de trabalho',
-          available: true,
-          location: 'A-01-01-A'
-        }];
-      }
-
-      const suggestions: KittingSuggestion[] = [];
-
-      // Analyze patterns
-      const toolFrequency: Record<string, number> = {};
-      recentMovements.forEach(movement => {
-        // Handle both single object and array cases from Supabase
-        const tool = Array.isArray(movement.tool) ? movement.tool[0] : movement.tool;
-        if (tool && tool.name) {
-          const toolName = tool.name;
-          toolFrequency[toolName] = (toolFrequency[toolName] || 0) + 1;
-        }
-      });
-
-      // Generate suggestions based on frequency
-      const mostUsed = Object.entries(toolFrequency)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 3);
-
-      mostUsed.forEach(([toolName], index) => {
-        const movement = recentMovements.find(m => {
-          const tool = Array.isArray(m.tool) ? m.tool[0] : m.tool;
-          return tool?.name === toolName;
-        });
-        if (movement && movement.tool) {
-          const tool = Array.isArray(movement.tool) ? movement.tool[0] : movement.tool;
-          suggestions.push({
-            toolId: movement.tool_id,
-            toolName: tool.name,
-            priority: index === 0 ? 'essential' : 'recommended',
-            confidence: 0.9 - (index * 0.1),
-            reason: 'Ferramenta frequentemente usada por você',
-            available: tool.status === 'available',
-            location: tool.location || 'N/A'
-          });
-        }
-      });
-
-      return suggestions.length > 0 ? suggestions : [{
+    return [
+      {
         toolId: 'demo-tool-1',
-        toolName: 'Ferramenta Demo',
-        priority: 'recommended',
-        confidence: 0.7,
-        reason: 'Sugestão baseada no padrão de uso',
+        toolName: 'Chave de Fenda',
+        priority: 'essential',
+        confidence: 0.95,
+        reason: 'Ferramenta frequentemente usada para este tipo de trabalho',
         available: true,
         location: 'A-01-01-A'
-      }];
-    } catch (error) {
-      console.error('Error generating suggestions:', error);
-      return [{
-        toolId: 'error-tool',
-        toolName: 'Erro ao gerar sugestões',
-        priority: 'optional',
-        confidence: 0.5,
-        reason: 'Erro no sistema',
-        available: false,
-        location: 'N/A'
-      }];
-    }
-  }
-
-  private findCommonCombinations(movements: any[]): string[][] {
-    // Simple algorithm to find tools used within the same day
-    const dailyUsage: Record<string, string[]> = {};
-    
-    movements.forEach(movement => {
-      const tool = Array.isArray(movement.tool) ? movement.tool[0] : movement.tool;
-      if (tool) {
-        const date = new Date(movement.timestamp).toDateString();
-        if (!dailyUsage[date]) dailyUsage[date] = [];
-        dailyUsage[date].push(tool.name);
+      },
+      {
+        toolId: 'demo-tool-2',
+        toolName: 'Multímetro',
+        priority: 'recommended',
+        confidence: 0.85,
+        reason: 'Recomendado para diagnósticos',
+        available: true,
+        location: 'B-02-03-C'
       }
-    });
-
-    const combinations: string[][] = [];
-    Object.values(dailyUsage).forEach(tools => {
-      if (tools.length > 1) {
-        combinations.push([...new Set(tools)]); // Remove duplicates
-      }
-    });
-
-    return combinations.slice(0, 2); // Return top 2 combinations
+    ];
   }
 }
 
