@@ -1,41 +1,13 @@
-import { Suspense, lazy } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-const Index = lazy(() => import("./pages/Index"));
-const Subscription = lazy(() => import("./pages/Subscription"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-
-// Create query client outside component
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      retry: 1,
-    },
-  },
-});
-
-// Loading fallback component
-const LoadingFallback = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="text-foreground">Carregando...</div>
-  </div>
-);
-
+// Minimal app to test if React works
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            <Route path="/*" element={<Index />} />
-            <Route path="/subscription" element={<Subscription />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/*" element={<div className="min-h-screen flex items-center justify-center bg-gray-100"><h1 className="text-2xl">App Loading Test</h1></div>} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
