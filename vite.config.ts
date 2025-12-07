@@ -11,18 +11,24 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === 'development' && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    dedupe: ["react", "react-dom", "react-router-dom", "@tanstack/react-query"],
+    dedupe: [
+      "react",
+      "react-dom",
+      "react-router-dom",
+      "@tanstack/react-query",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-toast",
+      "@radix-ui/react-tabs",
+    ],
   },
   optimizeDeps: {
     include: ["react", "react-dom", "react-router-dom", "@tanstack/react-query"],
-    force: true,
   },
   build: {
     commonjsOptions: {
