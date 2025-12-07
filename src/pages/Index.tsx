@@ -1,7 +1,5 @@
-
 import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/Sidebar';
-import { AppHeader } from '@/components/layout/AppHeader';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Dashboard } from '@/components/Dashboard';
 import { MasterDataModule } from '@/components/MasterDataModule';
@@ -32,148 +30,97 @@ import { AuthProvider } from '@/components/AuthProvider';
 import { AuthButton } from '@/components/AuthButton';
 import { ViewportProvider } from '@/components/ui/viewport-provider';
 import { useMobile } from '@/hooks/use-mobile';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/lib/supabase';
-import { Toaster } from '@/components/ui/toaster';
-import { Toaster as Sonner } from '@/components/ui/sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { LogIn } from 'lucide-react';
 
 const IndexContent = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   const { setSidebarCollapsed, setBreadcrumbs } = useNavigation();
   const isMobile = useMobile();
 
   useEffect(() => {
     getCurrentUser();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setCurrentUser(session?.user || null);
+      setLoadingUser(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const getCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setCurrentUser(user);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      setCurrentUser(session?.user || null);
+    } catch (error) {
+      console.error('Error getting user:', error);
+    } finally {
+      setLoadingUser(false);
+    }
   };
 
   useEffect(() => {
-    // Update breadcrumbs when module changes
-    const updateBreadcrumbs = () => {
-      switch (activeModule) {
-        case 'dashboard':
-          setBreadcrumbs([]);
-          break;
-        case 'more':
-          setBreadcrumbs([{ label: 'Mais Opções', path: '/more' }]);
-          break;
-        case 'personalized-dashboard':
-          setBreadcrumbs([{ label: 'Dashboard Personalizado', path: '/personalized-dashboard' }]);
-          break;
-        case 'ai-analytics':
-          setBreadcrumbs([{ label: 'Analytics IA', path: '/ai-analytics' }]);
-          break;
-        case 'realtime-analytics':
-          setBreadcrumbs([{ label: 'Analytics Tempo Real', path: '/realtime-analytics' }]);
-          break;
-        case 'workflow-manager':
-          setBreadcrumbs([{ label: 'Gestão de Workflows', path: '/workflow-manager' }]);
-          break;
-        case 'connector-hub':
-          setBreadcrumbs([{ label: 'Hub de Conectores', path: '/connector-hub' }]);
-          break;
-        case 'performance-monitor':
-          setBreadcrumbs([{ label: 'Monitor de Performance', path: '/performance-monitor' }]);
-          break;
-        case 'api-manager':
-          setBreadcrumbs([{ label: 'Gerenciamento de APIs', path: '/api-manager' }]);
-          break;
-        case 'security-dashboard':
-          setBreadcrumbs([{ label: 'Dashboard de Segurança', path: '/security-dashboard' }]);
-          break;
-        case 'masterdata':
-          setBreadcrumbs([{ label: 'Master Data', path: '/masterdata' }]);
-          break;
-        case 'stock':
-          setBreadcrumbs([{ label: 'Gestão de Estoque', path: '/stock' }]);
-          break;
-        case 'tools-qr':
-          setBreadcrumbs([{ label: 'Ferramentas QR', path: '/tools-qr' }]);
-          break;
-        case 'receiving':
-          setBreadcrumbs([{ label: 'Recebimento', path: '/receiving' }]);
-          break;
-        case 'shipping':
-          setBreadcrumbs([{ label: 'Expedição', path: '/shipping' }]);
-          break;
-        case 'reports':
-          setBreadcrumbs([{ label: 'Relatórios', path: '/reports' }]);
-          break;
-        case 'material-verification':
-          setBreadcrumbs([{ label: 'Verificação de Materiais', path: '/material-verification' }]);
-          break;
-        case 'epi-control':
-          setBreadcrumbs([{ label: 'Controle de EPIs', path: '/epi-control' }]);
-          break;
-        case 'material-request':
-          setBreadcrumbs([{ label: 'Requisição de Materiais', path: '/material-request' }]);
-          break;
-        case 'patrimonios':
-          setBreadcrumbs([{ label: 'Patrimônios', path: '/patrimonios' }]);
-          break;
-        default:
-          setBreadcrumbs([]);
-      }
+    const breadcrumbMap: Record<string, { label: string; path: string }[]> = {
+      'dashboard': [],
+      'more': [{ label: 'Mais Opções', path: '/more' }],
+      'personalized-dashboard': [{ label: 'Dashboard Personalizado', path: '/personalized-dashboard' }],
+      'ai-analytics': [{ label: 'Analytics IA', path: '/ai-analytics' }],
+      'realtime-analytics': [{ label: 'Analytics Tempo Real', path: '/realtime-analytics' }],
+      'workflow-manager': [{ label: 'Gestão de Workflows', path: '/workflow-manager' }],
+      'connector-hub': [{ label: 'Hub de Conectores', path: '/connector-hub' }],
+      'performance-monitor': [{ label: 'Monitor de Performance', path: '/performance-monitor' }],
+      'api-manager': [{ label: 'Gerenciamento de APIs', path: '/api-manager' }],
+      'security-dashboard': [{ label: 'Dashboard de Segurança', path: '/security-dashboard' }],
+      'masterdata': [{ label: 'Master Data', path: '/masterdata' }],
+      'stock': [{ label: 'Gestão de Estoque', path: '/stock' }],
+      'tools-qr': [{ label: 'Ferramentas QR', path: '/tools-qr' }],
+      'receiving': [{ label: 'Recebimento', path: '/receiving' }],
+      'shipping': [{ label: 'Expedição', path: '/shipping' }],
+      'reports': [{ label: 'Relatórios', path: '/reports' }],
+      'material-verification': [{ label: 'Verificação de Materiais', path: '/material-verification' }],
+      'epi-control': [{ label: 'Controle de EPIs', path: '/epi-control' }],
+      'material-request': [{ label: 'Requisição de Materiais', path: '/material-request' }],
+      'patrimonios': [{ label: 'Patrimônios', path: '/patrimonios' }],
     };
 
-    updateBreadcrumbs();
+    setBreadcrumbs(breadcrumbMap[activeModule] || []);
   }, [activeModule, setBreadcrumbs]);
 
   const handleModuleChange = (module: string) => {
     setActiveModule(module);
-    setSidebarCollapsed(true); // Close sidebar on mobile after selection
+    setSidebarCollapsed(true);
   };
 
   const renderModule = () => {
-    switch (activeModule) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'more':
-        return <MoreOptionsModule onModuleChange={handleModuleChange} />;
-      case 'personalized-dashboard':
-        return <PersonalizedDashboard />;
-      case 'ai-analytics':
-        return <AIAnalyticsDashboard />;
-      case 'realtime-analytics':
-        return <RealTimeAnalyticsDashboard />;
-      case 'workflow-manager':
-        return <WorkflowManager />;
-      case 'connector-hub':
-        return <ConnectorHub />;
-      case 'performance-monitor':
-        return <PerformanceMonitor />;
-      case 'api-manager':
-        return <APIManager />;
-      case 'security-dashboard':
-        return <SecurityDashboard />;
-      case 'masterdata':
-        return <MasterDataModule />;
-      case 'stock':
-        return <StockModule />;
-      case 'tools-qr':
-        return <ToolsQRModule />;
-      case 'receiving':
-        return <ReceivingModule />;
-      case 'shipping':
-        return <ShippingModule />;
-      case 'reports':
-        return <ReportsModule />;
-      case 'material-verification':
-        return <MaterialVerificationModule />;
-      case 'epi-control':
-        return <EPIControlModule />;
-      case 'material-request':
-        return <MaterialRequestModule />;
-      case 'patrimonios':
-        return <PatrimoniosModule />;
-      default:
-        return <Dashboard />;
-    }
+    const modules: Record<string, React.ReactNode> = {
+      'dashboard': <Dashboard />,
+      'more': <MoreOptionsModule onModuleChange={handleModuleChange} />,
+      'personalized-dashboard': <PersonalizedDashboard />,
+      'ai-analytics': <AIAnalyticsDashboard />,
+      'realtime-analytics': <RealTimeAnalyticsDashboard />,
+      'workflow-manager': <WorkflowManager />,
+      'connector-hub': <ConnectorHub />,
+      'performance-monitor': <PerformanceMonitor />,
+      'api-manager': <APIManager />,
+      'security-dashboard': <SecurityDashboard />,
+      'masterdata': <MasterDataModule />,
+      'stock': <StockModule />,
+      'tools-qr': <ToolsQRModule />,
+      'receiving': <ReceivingModule />,
+      'shipping': <ShippingModule />,
+      'reports': <ReportsModule />,
+      'material-verification': <MaterialVerificationModule />,
+      'epi-control': <EPIControlModule />,
+      'material-request': <MaterialRequestModule />,
+      'patrimonios': <PatrimoniosModule />,
+    };
+
+    return modules[activeModule] || <Dashboard />;
   };
 
   // Mobile Layout
@@ -189,8 +136,6 @@ const IndexContent = () => {
           </MobileLayout>
           <PWAInstaller />
           <AccessibilityMenu />
-          <Toaster />
-          <Sonner />
         </ViewportProvider>
       </AuthProvider>
     );
@@ -199,28 +144,36 @@ const IndexContent = () => {
   // Desktop Layout
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-background flex">
         <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
         <div className="flex-1 flex flex-col min-w-0">
-          <div className="border-b bg-white px-6 py-4">
+          <header className="border-b bg-card px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 flex-1 max-w-2xl">
                 <GlobalSearchV2 />
               </div>
-              <div className="flex items-center gap-2">
-                <AuthButton user={currentUser} onAuthChange={getCurrentUser} />
+              <div className="flex items-center gap-3">
+                {!loadingUser && !currentUser && (
+                  <Link to="/auth">
+                    <Button variant="outline" size="sm">
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Entrar
+                    </Button>
+                  </Link>
+                )}
+                {currentUser && (
+                  <AuthButton user={currentUser} onAuthChange={getCurrentUser} />
+                )}
                 <AdvancedNotificationCenter />
               </div>
             </div>
-          </div>
+          </header>
           <main className="flex-1 overflow-auto">
             {renderModule()}
           </main>
         </div>
         <PWAInstaller />
         <AccessibilityMenu />
-        <Toaster />
-        <Sonner />
       </div>
     </AuthProvider>
   );
