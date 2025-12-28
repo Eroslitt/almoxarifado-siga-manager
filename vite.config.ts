@@ -8,6 +8,14 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    hmr: {
+      clientPort: 8080,
+      protocol: 'wss',
+      timeout: 30000,
+    },
+    watch: {
+      usePolling: true,
+    },
   },
   plugins: [
     react(),

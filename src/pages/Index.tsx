@@ -18,6 +18,7 @@ import { GlobalSearchV2 } from '@/components/search/GlobalSearchV2';
 import { PersonalizedDashboard } from '@/components/dashboard/PersonalizedDashboard';
 import { AIAnalyticsDashboard } from '@/components/analytics/AIAnalyticsDashboard';
 import { PerformanceMonitor } from '@/components/system/PerformanceMonitor';
+import { SyncMonitor } from '@/components/system/SyncMonitor';
 import { APIManager } from '@/components/integration/APIManager';
 import { SecurityDashboard } from '@/components/security/SecurityDashboard';
 import { RealTimeAnalyticsDashboard } from '@/components/analytics/RealTimeAnalyticsDashboard';
@@ -34,6 +35,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LogIn } from 'lucide-react';
+import { useSync } from '@/hooks/useUnifiedStorage';
 
 const IndexContent = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -41,6 +43,9 @@ const IndexContent = () => {
   const [loadingUser, setLoadingUser] = useState(true);
   const { setSidebarCollapsed, setBreadcrumbs } = useNavigation();
   const isMobile = useMobile();
+  
+  // Initialize sync service
+  useSync(true); // Auto-start sync on mount
 
   useEffect(() => {
     getCurrentUser();
@@ -74,6 +79,7 @@ const IndexContent = () => {
       'workflow-manager': [{ label: 'Gestão de Workflows', path: '/workflow-manager' }],
       'connector-hub': [{ label: 'Hub de Conectores', path: '/connector-hub' }],
       'performance-monitor': [{ label: 'Monitor de Performance', path: '/performance-monitor' }],
+      'sync-monitor': [{ label: 'Monitor de Sincronização', path: '/sync-monitor' }],
       'api-manager': [{ label: 'Gerenciamento de APIs', path: '/api-manager' }],
       'security-dashboard': [{ label: 'Dashboard de Segurança', path: '/security-dashboard' }],
       'masterdata': [{ label: 'Master Data', path: '/masterdata' }],
@@ -106,6 +112,7 @@ const IndexContent = () => {
       'workflow-manager': <WorkflowManager />,
       'connector-hub': <ConnectorHub />,
       'performance-monitor': <PerformanceMonitor />,
+      'sync-monitor': <SyncMonitor />,
       'api-manager': <APIManager />,
       'security-dashboard': <SecurityDashboard />,
       'masterdata': <MasterDataModule />,

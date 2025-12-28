@@ -1,4 +1,3 @@
-
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,9 @@ import {
   Search,
   Bell,
   Package,
-  User
+  User,
+  RefreshCw,
+  Database
 } from 'lucide-react';
 
 interface MoreOptionsModuleProps {
@@ -54,28 +55,35 @@ export const MoreOptionsModule = ({ onModuleChange }: MoreOptionsModuleProps) =>
     {
       id: 'performance-monitor',
       title: 'Monitor de Performance',
-      description: 'Acompanhe a performance',
+      description: 'Acompanhe a performance do sistema',
       icon: Search,
       color: 'text-green-600'
+    },
+    {
+      id: 'sync-monitor',
+      title: 'Monitor de Sincronização',
+      description: 'Gerencie dados offline e sincronização',
+      icon: RefreshCw,
+      color: 'text-blue-600'
     },
     {
       id: 'api-manager',
       title: 'Gerenciamento de APIs',
       description: 'Gerencie suas integrações',
-      icon: Search,
+      icon: Database,
       color: 'text-orange-600'
     },
     {
       id: 'security-dashboard',
       title: 'Dashboard de Segurança',
-      description: 'Monitore a segurança',
+      description: 'Monitore a segurança do sistema',
       icon: Bell,
       color: 'text-red-600'
     },
     {
       id: 'masterdata',
       title: 'Master Data Avançado',
-      description: 'Configurações avançadas',
+      description: 'Configurações avançadas de dados',
       icon: Package,
       color: 'text-indigo-600'
     }
