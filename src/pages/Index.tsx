@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Dashboard } from '@/components/Dashboard';
@@ -32,42 +32,72 @@ import { AuthButton } from '@/components/AuthButton';
 import { ViewportProvider } from '@/components/ui/viewport-provider';
 import { useMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
+import { isDemoMode } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogIn } from 'lucide-react';
-import { useSync } from '@/hooks/useUnifiedStorage';
+import { LogIn, User } from 'lucide-react';
 
 const IndexContent = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
+  const [loadingUser, setLoadingUser] = useState(!isDemoMode);
   const { setSidebarCollapsed, setBreadcrumbs } = useNavigation();
   const isMobile = useMobile();
-  
-  // Initialize sync service
-  useSync(true); // Auto-start sync on mount
 
+  // Set up demo user immediately if in demo mode
   useEffect(() => {
+    if (isDemoMode) {
+      setCurrentUser({
+        id: 'demo-user-123',
+        email: 'demo@siga.com',
+        user_metadata: { full_name: 'Usuário Demo' }
+      });
+      setLoadingUser(false);
+      return;
+    }
+
+    let mounted = true;
+
+    const getCurrentUser = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (mounted) {
+          setCurrentUser(session?.user || null);
+          setLoadingUser(false);
+        }
+      } catch (error) {
+        console.error('Error getting user:', error);
+        if (mounted) {
+          setLoadingUser(false);
+        }
+      }
+    };
+
     getCurrentUser();
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setCurrentUser(session?.user || null);
-      setLoadingUser(false);
+      if (mounted) {
+        setCurrentUser(session?.user || null);
+        setLoadingUser(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const getCurrentUser = async () => {
+  const handleRefreshUser = useCallback(async () => {
+    if (isDemoMode) return;
+    
     try {
       const { data: { session } } = await supabase.auth.getSession();
       setCurrentUser(session?.user || null);
     } catch (error) {
-      console.error('Error getting user:', error);
-    } finally {
-      setLoadingUser(false);
+      console.error('Error refreshing user:', error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const breadcrumbMap: Record<string, { label: string; path: string }[]> = {
@@ -160,7 +190,13 @@ const IndexContent = () => {
                 <GlobalSearchV2 />
               </div>
               <div className="flex items-center gap-3">
-                {!loadingUser && !currentUser && (
+                {isDemoMode && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm">
+                    <User className="h-4 w-4" />
+                    <span>Modo Demo</span>
+                  </div>
+                )}
+                {!loadingUser && !currentUser && !isDemoMode && (
                   <Link to="/auth">
                     <Button variant="outline" size="sm">
                       <LogIn className="h-4 w-4 mr-2" />
@@ -168,8 +204,8 @@ const IndexContent = () => {
                     </Button>
                   </Link>
                 )}
-                {currentUser && (
-                  <AuthButton user={currentUser} onAuthChange={getCurrentUser} />
+                {(currentUser || isDemoMode) && (
+                  <AuthButton user={currentUser} onAuthChange={handleRefreshUser} />
                 )}
                 <AdvancedNotificationCenter />
               </div>
