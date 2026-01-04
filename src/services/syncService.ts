@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { unifiedStorage, QueueItem } from '@/lib/unifiedStorage';
 
 /**
@@ -171,17 +172,18 @@ class SyncService {
   private async syncItem(item: QueueItem): Promise<SyncItemResult> {
     try {
       let response;
+      const table = item.table as keyof Database['public']['Tables'] & string;
 
       switch (item.action) {
         case 'create':
-          response = await supabase.from(item.table).insert(item.data).select();
+          response = await supabase.from(table).insert(item.data).select();
           break;
 
         case 'update':
           const updateId = item.data.id;
           if (!updateId) throw new Error('Update requires an id');
           response = await supabase
-            .from(item.table)
+            .from(table)
             .update(item.data)
             .eq('id', updateId)
             .select();
@@ -191,7 +193,7 @@ class SyncService {
           const deleteId = item.data.id;
           if (!deleteId) throw new Error('Delete requires an id');
           response = await supabase
-            .from(item.table)
+            .from(table)
             .delete()
             .eq('id', deleteId);
           break;
