@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import { isDemoMode } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, UserPlus, LogOut, User } from 'lucide-react';
 
@@ -134,6 +135,15 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
 
   const handleSignOut = async () => {
     try {
+      if (isDemoMode) {
+        toast({
+          title: "Modo Demo",
+          description: "Logout realizado (modo demonstração).",
+        });
+        onAuthChange();
+        return;
+      }
+      
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
@@ -159,16 +169,20 @@ export const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) =>
     setFullName('');
   };
 
-  if (user) {
+  if (user || isDemoMode) {
+    const displayName = isDemoMode 
+      ? 'Usuário Demo' 
+      : (user?.user_metadata?.full_name || user?.email || 'Usuário');
+    
     return (
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <User className="h-4 w-4" />
-          <span>{user.user_metadata?.full_name || user.email}</span>
+          <span className="hidden sm:inline">{displayName}</span>
         </div>
         <Button variant="outline" size="sm" onClick={handleSignOut}>
-          <LogOut className="h-4 w-4 mr-1" />
-          Sair
+          <LogOut className="h-4 w-4 sm:mr-1" />
+          <span className="hidden sm:inline">Sair</span>
         </Button>
       </div>
     );
